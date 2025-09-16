@@ -103,7 +103,6 @@ class RevenueController extends Controller
 
     public function store(Request $request)
     {
-
         // dd($request->all());
         if (!Auth::user()->can('create revenue')) {
             return redirect()->back()->with('error', __('Permission denied.'));

@@ -15,7 +15,7 @@
 
 @section('action-btn')
     <div class="float-end">
-        @if ($CurrentBuilding)
+        @if ($CurrentBuilding) 
             <a href="#" data-size="md" data-bs-toggle="tooltip" title="{{ __('Sync Bill') }}"
                 data-url="{{ route('bill.billPopup',$vendor->id) }}" data-ajax-popup="true"
                 data-title="{{ __('Sync Bill') }}" class="btn btn-sm btn-primary">

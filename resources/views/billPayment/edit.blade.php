@@ -17,7 +17,11 @@
         <!-- Payment Account -->
         <div class="form-group col-md-6">
             {{ Form::label('account_id', __('Payment Account'), ['class' => 'form-label']) }}
-            {{ Form::select('account_id', $accounts, $billPayment->account_id, ['class' => 'form-control select', 'required' => 'required']) }}
+            {{ Form::select('account_id', $accounts, $billPayment->account_id, [
+                'class' => 'form-control select', 
+                'required' => 'required', 
+                'disabled' => 'disabled'
+            ]) }}
         </div>
 
         <!-- Amount -->
@@ -112,26 +116,26 @@
     }
 
     // Validate adjusted amounts
-    function validateAmounts() {
-        let totalAdjustedAmount = Array.from(document.querySelectorAll('.adjusted-amount'))
-            .map(input => parseFloat(input.value) || 0)
-            .reduce((a, b) => a + b, 0);
+    // function validateAmounts() {
+    //     let totalAdjustedAmount = Array.from(document.querySelectorAll('.adjusted-amount'))
+    //         .map(input => parseFloat(input.value) || 0)
+    //         .reduce((a, b) => a + b, 0);
 
-        let paymentAmount = parseFloat(document.querySelector('[name="amount"]').value) || 0;
+    //     let paymentAmount = parseFloat(document.querySelector('[name="amount"]').value) || 0;
 
-        let invalid = totalAdjustedAmount !== paymentAmount || paymentAmount <= 0 || totalAdjustedAmount <= 0;
+    //     let invalid = totalAdjustedAmount !== paymentAmount || paymentAmount <= 0 || totalAdjustedAmount <= 0;
 
-        document.querySelector('[type="submit"]').disabled = invalid;
+    //     document.querySelector('[type="submit"]').disabled = invalid;
 
-        // Show or hide the error message
-        const amountError = document.getElementById('amount-error');
-        if (invalid) {
-            amountError.textContent = 'The payment amount must be equal to the sum of the adjusted amounts and greater than 0.';
-            amountError.classList.remove('d-none');
-        } else {
-            amountError.classList.add('d-none');
-        }
-    }
+    //     // Show or hide the error message
+    //     const amountError = document.getElementById('amount-error');
+    //     if (invalid) {
+    //         amountError.textContent = 'The payment amount must be equal to the sum of the adjusted amounts and greater than 0.';
+    //         amountError.classList.remove('d-none');
+    //     } else {
+    //         amountError.classList.add('d-none');
+    //     }
+    // }
 
     // Fetch max amount for selected bill
     document.getElementById('bill-repeater').addEventListener('change', function(event) {

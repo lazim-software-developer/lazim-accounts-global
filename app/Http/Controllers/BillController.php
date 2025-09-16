@@ -22,12 +22,14 @@ use App\Models\ProductService;
 use App\Models\TransactionLines;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Jobs\AddTransactionLinesJob;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Crypt;
 use App\Models\ProductServiceCategory;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\VenderController;
+use App\Models\StakeholderTransactionLine;
 
 class BillController extends Controller
 {
@@ -308,9 +310,11 @@ class BillController extends Controller
                 $bill->category_id = $request->category_id;
                 $bill->total_amount = $totalAmount;
                 $bill->total_due = $totalDue;
+                $bill->status = 0;
                 $bill->save();
                 TransactionLines::deleteAndRecalculateTransactionBalance($bill, 'Bill');
                 TransactionLines::deleteAndRecalculateTransactionBalance($bill, 'Bill Account');
+                StakeholderTransactionLine::deleteAndRecalculateTransactionBalance($bill, 'Bill');
                 $items = $request->services;
                 BillAccount::where('ref_id', $bill->id)->delete();
                 BillProduct::where('bill_id', $bill->id)->delete();
@@ -481,7 +485,7 @@ class BillController extends Controller
             Utility::addTransactionLines($data);
             }
 
-            $bill->updateVendorBalance();
+            $bill->updateBillVendorBalance();
 
             $uArr = [
                 'bill_name' => $bill->name,
@@ -642,9 +646,9 @@ class BillController extends Controller
                 $billPayment->reference = $request->reference ?? $reference;
                 $billPayment->description = $request->description;
                 $billPayment->building_id = Auth::user()->currentBuilding();
-                if (! empty($request->add_receipt)) {
-                    $fileName = time().'_'.$request->add_receipt->getClientOriginalName();
-                    $fileContent = file_get_contents($request->add_receipt);
+                if (! empty($bankaccount['add_receipt'])) {
+                    $fileName = time().'_'.$bankaccount['add_receipt']->getClientOriginalName();
+                    $fileContent = file_get_contents($bankaccount['add_receipt']);
                     Storage::disk('s3')->put($fileName, $fileContent);
                     $billPayment->add_receipt = $fileName;
                 }
@@ -1505,6 +1509,10 @@ class BillController extends Controller
     {
         return view('bill.billPopup', compact('id'));
     }
+    public function billBulkPopup()
+    {
+        return view('bill.billBulkPopup');
+    }
     public function syncBill(Request $request,$id)
     {
         $validated = $request->validate([
@@ -1533,6 +1541,179 @@ class BillController extends Controller
         $vendorController = new VenderController();
         $result = $vendorController->syncBill($venderData, $vender, $buildingId,$fromDate,$toDate);
         if($result>0){
+            return redirect()->back()->with('success', __('Bill synced successfully.'));
+        }
+        return redirect()->back()->with('error', __('No new bill found to sync.'));
+    }
+
+    public function bulkSync(Request $request)
+    {
+        $validated = $request->validate([
+            'from_date' => 'required|date|before_or_equal:today',
+            'to_date' => 'required|date|after_or_equal:from_date|before_or_equal:today',
+        ], [
+            'from_date.before_or_equal' => 'From date cannot be in the future.',
+            'to_date.after_or_equal' => 'To date must be after or equal to from date.',
+            'to_date.before_or_equal' => 'To date cannot be in the future.',
+        ]);
+        $fromDate = Carbon::parse($validated['from_date'])->startOfDay();
+        $toDate = Carbon::parse($validated['to_date'])->endOfDay();
+        if (!isset($validated['from_date']) || !isset($validated['to_date'])) {
+            return redirect()->back()->with('error', __('From date and to date are required.'));
+        }
+        if ($validated['from_date'] > $validated['to_date']) {
+            return redirect()->back()->with('error', __('From date cannot be greater than to date.'));
+        }
+        if ($validated['from_date'] == $validated['to_date']) {
+            return redirect()->back()->with('error', __('From date and to date cannot be the same.'));
+        }
+        $buildingId=Auth::user()->currentBuilding();
+        $authUser=Auth::user();
+        $vendorController = new VenderController();
+        $secondDB = DB::connection(env('SECOND_DB_CONNECTION'));
+        $invoices = $secondDB->table('invoices')->where('status', 'approved')
+            ->whereBetween('date', [$fromDate, $toDate])->where('building_id', $buildingId)->where('is_sync', 0)->get();
+        $successCount = 0;
+        $ids = [];
+        foreach ($invoices as $invoice) {
+            $venderData = $secondDB->table('vendors')->where('id', $invoice->vendor_id)->first();
+            $vender = Vender::where('name', $venderData->name)->first();
+            if($vender){
+            $contractDetail = $secondDB->table('contracts')->where('id', $invoice->contract_id)->where('building_id', $buildingId)->first();
+                if ($contractDetail) {
+                    $wdaDetails = $secondDB->table('wda')->where('contract_id', $invoice->contract_id)->where('vendor_id', $venderData->id)->where('building_id', $buildingId)->first();
+                    if ($wdaDetails) {
+                        $serviceDetail = $secondDB->table('services')->where('id', $contractDetail->service_id)->first();
+                        if ($serviceDetail) {
+                            $subCategory = ProductService::where('name', $serviceDetail->name)->where('building_id', $buildingId)->first();
+                            if (!$subCategory) {
+                                $subCategory = ProductService::updateOrCreate(
+                                    [
+                                        'name' => $serviceDetail->name,
+                                        'building_id' => $buildingId,
+                                        'created_by' => Auth::user()->creatorId(),
+                                        'service_code' => 'A1.01',
+                                    ],
+                                    [
+                                        'sku' => 'Cl846',
+                                        'tax_id' => 1,
+                                        'category_id' => 7,
+                                        'unit_id' => 2,
+                                        'type' => 'Service',
+                                        'sale_chartaccount_id' => 1,
+                                        'expense_chartaccount_id' => 25,
+                                        'created_at' => date('Y-m-d H:i:s'),
+                                        'updated_at' => date('Y-m-d H:i:s'),
+                                    ]
+                                );
+                            }
+                            if ($subCategory) {
+                                $bill = Bill::updateOrCreate(
+                                    [
+                                        'vender_id' => $vender->id,
+                                        'building_id' => $buildingId,
+                                        'category_id' => $subCategory->category_id,
+                                        'created_by' => Auth::user()->creatorId(),
+                                    ],
+                                    [
+                                        'bill_id' => $this->billNumber(Auth::user()->creatorId()),
+                                        'bill_date' => $invoice->date,
+                                        'due_date' => $invoice->date,
+                                        'order_number' => $vendorController->OrderNumber(Auth::user()->creatorId()),
+                                        'status' => 0,
+                                        'shipping_display' => 1,
+                                        'send_date' => date('Y-m-d H:i:s'),
+                                        'discount_apply' => 0,
+                                        'created_at' => date('Y-m-d H:i:s'),
+                                        'updated_at' => date('Y-m-d H:i:s'),
+                                        'ref_number' => $invoice->invoice_number,
+                                        'lazim_invoice_id' => null,
+                                        'is_mollak' => 1,
+                                        'total_amount' => $invoice->invoice_amount,
+                                        'total_due' => $invoice->invoice_amount,
+                                        'wda_document' => $wdaDetails->document ?? null,
+                                        'wda_number' => $wdaDetails->wda_number ?? null,
+                                    ]
+                                );
+                                Utility::starting_number($bill->bill_id + 1, 'bill', Auth::user()->creatorId());  // changed added created_by
+                                $actualAmount = ($invoice->invoice_amount / 21) * 20;
+                                $chartOfAccount = ChartOfAccount::where('id', $subCategory->expense_chartaccount_id)->where('building_id', $buildingId)->first();
+                                $billAccount = BillAccount::updateOrCreate([
+                                    'chart_account_id' => $chartOfAccount->id,
+                                    'ref_id' => $bill->id,
+                                    'type' => 'Bill',
+                                    'description' => 'Bill for Invoice ID: ' . $invoice->id,
+                                ], [
+                                    'price' => round($actualAmount, 3),
+                                ]);
+                                $billProduct = BillProduct::updateOrCreate([
+                                    'bill_id' => $bill->id,
+                                    'product_id' => $subCategory->id,
+                                ], [
+                                    'quantity' => 1,
+                                    'tax' => 1,
+                                    'discount' => 0,
+                                    'price' => round($actualAmount, 3),
+                                    'tax_amount' => round($invoice->invoice_amount - $actualAmount, 3),
+                                    'description' => 'Bill for Invoice ID: ' . $invoice->id,
+                                    'bill_account_id' => $billAccount->id,
+                                ]);
+                                Utility::total_quantity('plus', $billProduct->quantity, $billProduct->product_id);
+                                $type = 'bill';
+                                $type_id = $bill->id;
+                                $productDescription = '1' . ' ' . __('quantity purchase in bill') . ' ' . Vender::billNumberFormat($bill->bill_id);  // changes Auth::user()->
+                                Utility::addInvoiceProductStock($subCategory->id, 1, $type, $productDescription, $type_id, Auth::user()->creatorId());
+                                BillAccount::updateOrCreate([
+                                    'chart_account_id' => $chartOfAccount->id,
+                                    'ref_id' => $bill->id,
+                                    'type' => 'Bill',
+                                ], [
+                                    'vat_chart_of_account_id' => $vatLedger->id,
+                                    'vat_amount' => round($invoice->invoice_amount - $actualAmount, 3),
+                                    'total_amount' => $invoice->invoice_amount,
+                                ]);
+                            } else {
+                                Log::error('Failed to sync bill for vender ID: ' . $venderData->id, [
+                                    'building_id' => $buildingId,
+                                    'error' => 'Product Service Not Found For Service ID: ' . $serviceDetail->name,
+                                    'user_id' => $authUser->id
+                                ]);
+                            }
+                        } else {
+                            Log::error('Failed to sync bill for vender ID: ' . $venderData->id, [
+                                'building_id' => $buildingId,
+                                'error' => 'Service not found for Contract & Service ID: ' . $contractDetail->service_id,
+                                'user_id' => $authUser->id
+                            ]);
+                        }
+                    } else {
+                        Log::error('Failed to sync bill for vender ID: ' . $venderData->id, [
+                            'building_id' => $buildingId,
+                            'error' => 'WDA not found for WDA ID: ' . $invoice->wda_id,
+                            'user_id' => $authUser->id
+                        ]);
+                    }
+                } else {
+                    Log::error('Failed to sync bill for vender ID: ' . $venderData->id, [
+                        'building_id' => $buildingId,
+                        'error' => 'Contract not found for Contract ID: ' . $invoice->contract_id,
+                        'user_id' => $authUser->id
+                    ]);
+                }
+                $successCount++;
+                $ids[] = $invoice->id;
+            }
+            else{
+                Log::error('Failed to sync bill for vender ID: ' . $venderData->id, [
+                    'building_id' => $buildingId,
+                    'error' => 'Vendor not found for Vendor : ' . $venderData->name,
+                    'user_id' => $authUser->id
+                ]);
+            }
+        }
+        $connection = DB::connection(env('SECOND_DB_CONNECTION'));
+        $connection->table('invoices')->whereIn('id', $ids)->update(['is_sync' => 1]);
+        if($successCount>0){
             return redirect()->back()->with('success', __('Bill synced successfully.'));
         }
         return redirect()->back()->with('error', __('No new bill found to sync.'));

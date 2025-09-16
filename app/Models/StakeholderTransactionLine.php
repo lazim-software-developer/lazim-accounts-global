@@ -58,10 +58,14 @@ class StakeholderTransactionLine extends Model
 
     public static function recalculateStakeholderBalances($userColumn, $userId, $fromDate)
     {
+        // $transactions = StakeholderTransactionLine::where($userColumn, $userId)
+        //     ->where('created_at', '>=', $fromDate)
+        //     ->orderBy('created_at')
+        //     ->get();
+        
         $transactions = StakeholderTransactionLine::where($userColumn, $userId)
-            ->where('created_at', '>=', $fromDate)
-            ->orderBy('created_at')
-            ->get();
+            ->latest('created_at')
+            ->first();
 
         foreach ($transactions as $transaction) {
             $previousTransaction = $transaction->getPreviousTransaction();

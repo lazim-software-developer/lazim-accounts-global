@@ -27,8 +27,8 @@
     <div class="float-end">
         @if ($CurrentBuilding)
             <a href="#" data-size="md" data-bs-toggle="tooltip" title="{{ __('Sync Vendors') }}"
-                data-url="{{ route('vender.vendorPopup') }}" data-ajax-popup="true"
-                data-title="{{ __('Sync Vendors') }}" class="btn btn-sm btn-primary">
+                data-url="{{ route('vender.vendorPopup') }}" data-ajax-popup="true" data-title="{{ __('Sync Vendors') }}"
+                class="btn btn-sm btn-primary">
                 {{ __('Sync Vendors') }}
             </a>
         @endif
@@ -99,7 +99,7 @@
                                         </td>
                                         <td>{{ $Vender['contact'] }}</td>
                                         <td>{{ $Vender['email'] }}</td>
-                                        <td>{{ \Auth::user()->priceFormat($Vender['balance'],true) }}</td>
+                                        <td>{{ \Auth::user()->priceFormat($Vender['balance'], true) }}</td>
                                         {{-- <td>
                                             {{ !empty($Vender->last_login_at) ? $Vender->last_login_at : '-' }}
                                         </td> --}}

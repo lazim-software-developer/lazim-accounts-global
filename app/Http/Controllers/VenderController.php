@@ -2,36 +2,37 @@
 
 namespace App\Http\Controllers;
 
-use App\Exports\VenderExport;
-use App\Imports\VenderImport;
-use App\Models\Mail\UserCreate;
+use Auth;
+use File;
+use Carbon\Carbon;
 use App\Models\Bill;
+use App\Models\Plan;
+use App\Models\User;
+use App\Models\Vender;
+use App\Models\Utility;
 use App\Models\BillAccount;
 use App\Models\BillPayment;
 use App\Models\BillProduct;
-use App\Models\ChartOfAccount;
-use App\Models\ChartOfAccountParent;
-use App\Models\ChartOfAccountSubType;
-use App\Models\ChartOfAccountType;
 use App\Models\CustomField;
-use App\Models\Plan;
-use App\Models\ProductService;
-use App\Models\ProductServiceCategory;
 use App\Models\Transaction;
-use App\Models\User;
-use App\Models\Utility;
-use App\Models\Vender;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
+use App\Exports\VenderExport;
+use App\Imports\VenderImport;
+use App\Models\BuildingVendor;
+use App\Models\ChartOfAccount;
+use App\Models\ProductService;
+use App\Models\Mail\UserCreate;
+use Illuminate\Validation\Rule;
+use App\Models\ChartOfAccountType;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
+use App\Models\ChartOfAccountParent;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
-use Spatie\Permission\Models\Role;
-use Auth;
-use File;
+use App\Models\ChartOfAccountSubType;
+use App\Models\ProductServiceCategory;
+use Illuminate\Support\Facades\Storage;
 
 class VenderController extends Controller
 {
@@ -42,11 +43,19 @@ class VenderController extends Controller
         return view('vender.dashboard', $data);
     }
 
+    public function syncVenderFile()
+    {
+        return view('vender.venderSync');
+    }
+
+
+
     public function index()
     {
         if (\Auth::user()->can('manage vender')) {
-            $vendorIds = DB::table('oa_vendor')->where('lazim_owner_association_id', \Auth::user()->currentOA())->pluck('vendor_id');
-            $venders = Vender::where('created_by', '=', \Auth::user()->creatorId())->get();
+            $buildingId = \Auth::user()->currentBuilding();
+            $getVendors = BuildingVendor::where('building_id', $buildingId)->pluck('vendor_id');
+            $venders = Vender::whereIn('id', $getVendors)->get();
 
             return view('vender.index', compact('venders'));
         } else {
@@ -157,6 +166,7 @@ class VenderController extends Controller
                     'building_id' => $buildingId,
                     'is_mollak' => 1,
                 ]);
+                $this->BuildingVendor($venderData->id,$vender->id);
                 $successCount++;
                 $ids[] = $venderData->id;
                 $role_r = Role::where('name', '=', 'vender')->firstOrFail();
@@ -262,12 +272,20 @@ class VenderController extends Controller
             __('Successfully synced :count venders.', ['count' => $successCount])
         );
     }
-
-    public function syncBill($venderData, $vender, $buildingId,$fromDate,$toDate)
+    protected function BuildingVendor($venderId,$id)
     {
+        $connection = DB::connection(env('SECOND_DB_CONNECTION'));
+        $venderData = $connection->table('building_vendor')->where('vendor_id', $venderId)->distinct('building_id')->pluck('building_id');
+        foreach ($venderData as $value) {
+            BuildingVendor::updateOrCreate(['building_id' => $value, 'vendor_id' => $id]);
+        }
+    }
+    public function syncBill($venderData, $vender, $buildingId, $fromDate, $toDate)
+    {
+        $authUser=Auth::user();
         $secondDB = DB::connection(env('SECOND_DB_CONNECTION'));
         $invoices = $secondDB->table('invoices')->where('status', 'approved')->where('vendor_id', $venderData->id)
-        ->whereBetween('date', [$fromDate, $toDate])->where('building_id', $buildingId)->where('is_sync', 0)->get();
+            ->whereBetween('date', [$fromDate, $toDate])->where('building_id', $buildingId)->where('is_sync', 0)->get();
         $successCount = 0;
         $ids = [];
         foreach ($invoices as $invoice) {
@@ -355,52 +373,6 @@ class VenderController extends Controller
                             $type_id = $bill->id;
                             $productDescription = '1' . ' ' . __('quantity purchase in bill') . ' ' . Vender::billNumberFormat($bill->bill_id);  // changes Auth::user()->
                             Utility::addInvoiceProductStock($subCategory->id, 1, $type, $productDescription, $type_id, Auth::user()->creatorId());
-                            $vendorLedger = ChartOfAccount::where('name', $venderData->name)->where('building_id', $buildingId)->first();
-                            $data = [
-                                'account_id' => $vendorLedger->id,
-                                'transaction_type' => 'Credit',
-                                'transaction_amount' => $invoice->invoice_amount,
-                                'reference' => 'Bill',
-                                'reference_id' => $bill->id,
-                                'reference_sub_id' => 0,
-                                'date' => $bill->bill_date,
-                            ];
-                            Utility::addTransactionLines($data);
-                            $data2 = [
-                                'account_id' => $chartOfAccount->id,
-                                'transaction_type' => 'Debit',
-                                'transaction_amount' => $actualAmount,
-                                'reference' => 'Bill',
-                                'reference_id' => $bill->id,
-                                'reference_sub_id' => 0,
-                                'date' => $bill->bill_date,
-                            ];
-                            Utility::addTransactionLines($data2);
-                            $vatLedger = ChartOfAccount::where('code', '2125')->where('building_id', $buildingId)->first();
-                            if (!$vatLedger) {
-                                $vatLedger = ChartOfAccount::updateOrCreate([
-                                    'code' => '2125',
-                                    'name' => 'VAT Payable 5%',
-                                    'type' => 2,
-                                    'sub_type' => 7,
-                                    'parent' => 0,
-                                    'description' => null,
-                                    'building_id' => $buildingId,
-                                    'created_by' => Auth::user()->creatorId(),
-                                    'created_at' => date('Y-m-d H:i:s'),
-                                    'updated_at' => date('Y-m-d H:i:s'),
-                                ]);
-                            }
-                            $data3 = [
-                                'account_id' => $vatLedger->id,
-                                'transaction_type' => 'Debit',
-                                'transaction_amount' => round($invoice->invoice_amount - $actualAmount, 3),
-                                'reference' => 'Bill',
-                                'reference_id' => $bill->id,
-                                'reference_sub_id' => 0,
-                                'date' => $bill->bill_date,
-                            ];
-                            Utility::addTransactionLines($data3);
                             BillAccount::updateOrCreate([
                                 'chart_account_id' => $chartOfAccount->id,
                                 'ref_id' => $bill->id,
@@ -410,7 +382,7 @@ class VenderController extends Controller
                                 'vat_amount' => round($invoice->invoice_amount - $actualAmount, 3),
                                 'total_amount' => $invoice->invoice_amount,
                             ]);
-                        }else{
+                        } else {
                             Log::error('Failed to sync bill for vender ID: ' . $venderData->id, [
                                 'building_id' => $buildingId,
                                 'error' => 'Product Service Not Found For Service ID: ' . $serviceDetail->name,
@@ -549,6 +521,7 @@ class VenderController extends Controller
                 $vender->lang = !empty($default_language) ? $default_language->value : '';
                 $vender->is_enable_login = $enableLogin;
                 $vender->save();
+                BuildingVendor::create(['building_id' => \Auth::user()->currentBuilding(), 'vendor_id' => $vender->id]);
                 CustomField::saveData($vender, $request->customField);
             } else {
                 return redirect()->back()->with('error', __('Your user limit is over, Please upgrade plan.'));
@@ -689,6 +662,8 @@ class VenderController extends Controller
 
         return $latest->vender_id + 1;
     }
+
+
 
     public function venderLogout(Request $request)
     {
@@ -1108,6 +1083,7 @@ class VenderController extends Controller
                 $errorArray[] = $vendorData;
             } else {
                 $vendorData->save();
+                BuildingVendor::create(['building_id' => \Auth::user()->currentBuilding(), 'vendor_id' => $vendorData->id]);
             }
         }
 

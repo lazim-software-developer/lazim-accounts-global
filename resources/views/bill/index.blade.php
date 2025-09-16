@@ -1,4 +1,7 @@
 @extends('layouts.admin')
+@php
+    $CurrentBuilding = \Auth::user()->currentBuilding();
+@endphp
 @section('page-title')
     {{ __('Manage Bills') }}
 @endsection
@@ -17,7 +20,13 @@
         <!-- <a class="btn btn-sm btn-primary" data-bs-toggle="collapse" href="#multiCollapseExample1" role="button" aria-expanded="false" aria-controls="multiCollapseExample1" data-bs-toggle="tooltip" title="{{ __('Filter') }}">
                 <i class="ti ti-filter"></i>
             </a> -->
-
+        @if ($CurrentBuilding) 
+            <a href="#" data-size="md" data-bs-toggle="tooltip" title="{{ __('Sync Bill') }}"
+                data-url="{{ route('bill.billBulkPopup') }}" data-ajax-popup="true"
+                data-title="{{ __('Sync Bill') }}" class="btn btn-sm btn-primary">
+                {{ __('Sync Bill') }}
+            </a>
+        @endif
         <a href="{{ route('Bill.export') }}" class="btn btn-sm btn-primary" data-bs-toggle="tooltip"
             title="{{ __('Export') }}">
             <i class="ti ti-file-export"></i>
@@ -199,6 +208,7 @@
                                                         @endif
                                                     @endcan
                                                     @can('edit bill')
+                                                    @if($bill->status == 0)
                                                         <div class="action-btn bg-info ms-2">
                                                             <a href="{{ route('bill.edit', \Crypt::encrypt($bill->id)) }}"
                                                                 class="mx-3 btn btn-sm align-items-center"
@@ -207,6 +217,7 @@
                                                                 <i class="ti ti-edit text-white"></i>
                                                             </a>
                                                         </div>
+                                                    @endif
                                                     @endcan
                                                     @can('delete bill')
                                                         <div class="action-btn bg-danger ms-2">

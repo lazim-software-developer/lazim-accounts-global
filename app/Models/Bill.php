@@ -208,6 +208,10 @@ class Bill extends Model
     {
         Utility::updateUserTransactionLine('vendor', $this->vender_id, $this->getTotal(), 'credit', 'Bill', $this->id, $this->bill_date);
     }
+    public function updateBillVendorBalance()
+    {
+        Utility::updateUserTransactionLine('vendor', $this->vender_id, $this->total_amount, 'credit', 'Bill', $this->id, $this->bill_date);
+    }
 
     public function deleteVendorTransactionLine()
     {

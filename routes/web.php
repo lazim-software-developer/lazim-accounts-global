@@ -718,6 +718,8 @@ Route::group(['middleware' => ['verified']], function () {
             Route::get('bill/items', [BillController::class, 'items'])->name('bill.items');
             Route::post('bill/sync/{id}', [BillController::class, 'syncBill'])->name('bill.sync');
             Route::get('bill/billPopup/{id}', [BillController::class, 'billPopup'])->name('bill.billPopup');
+            Route::get('bill/billBulkPopup', [BillController::class, 'billBulkPopup'])->name('bill.billBulkPopup');
+            Route::post('bill/bulkSync', [BillController::class, 'bulkSync'])->name('bill.bulkSync');
 
             Route::resource('bill', BillController::class);
             Route::get('bill/create/{cid}', [BillController::class, 'create'])->name('bill.create');
@@ -1042,6 +1044,8 @@ Route::group(['middleware' => ['verified']], function () {
     Route::post('sync/bulkreceipt', [CustomerController::class, 'syncBulkReceipt'])->name('sync.bulkreceipt');
     Route::post('sync/receipt', [CustomerController::class, 'syncReceipt'])->name('sync.receipt');
 
+    Route::get('vender/sync/vender', [VenderController::class, 'syncVenderFile'])->name('vender.sync.vender');
+    Route::post('sync/vender', [VenderController::class, 'syncVender'])->name('sync.vender');
     Route::get('export/vender', [VenderController::class, 'export'])->name('vender.export');
     Route::get('import/vender/file', [VenderController::class, 'importFile'])->name('vender.file.import');
     Route::post('import/vender', [VenderController::class, 'import'])->name('vender.import');

@@ -1,4 +1,4 @@
-{{ Form::open(array('route' => array('sync.receipt'),'method'=>'post', 'enctype' => "multipart/form-data")) }}
+{{ Form::open(array('route' => array('sync.receipt'),'method'=>'post', 'enctype' => "multipart/form-data", 'onsubmit' => 'handleFormSubmit(event)')) }}
 <div class="modal-body">
     <div class="row">
         <div class="col-md-12 mt-2">
@@ -23,6 +23,28 @@
 </div>
 <div class="modal-footer">
     <input type="button" value="{{__('Cancel')}}" class="btn  btn-light" data-bs-dismiss="modal">
-    <input type="submit" value="{{__('Sync')}}" class="btn  btn-primary">
+    <button type="submit" class="btn btn-primary" id="submit-btn">
+        <span class="submit-text">{{__('Sync')}}</span>
+        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+    </button>
 </div>
+<script>
+function handleFormSubmit(event) {
+    let submitBtn = document.getElementById('submit-btn');
+    
+    // Prevent double submission
+    if (submitBtn.disabled) {
+        event.preventDefault();
+        return false;
+    }
+    
+    // Show loader and disable button
+    submitBtn.disabled = true;
+    submitBtn.querySelector('.submit-text').classList.add('d-none');
+    submitBtn.querySelector('.spinner-border').classList.remove('d-none');
+    
+    // Allow form to submit naturally
+    return true;
+}
+</script>
 {{ Form::close() }}

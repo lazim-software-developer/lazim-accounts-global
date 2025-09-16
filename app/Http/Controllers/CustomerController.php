@@ -30,6 +30,7 @@ use App\Models\ChartOfAccountType;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Log;
+use App\Jobs\AddTransactionLinesJob;
 use App\Models\ChartOfAccountParent;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -1349,7 +1350,8 @@ class CustomerController extends Controller
                 'reference_sub_id' => $product->id,
                 'date' => $invoiceRecord->issue_date,
             ];
-            Utility::addTransactionLines($data, $creatorId, $invoiceRecord->building_id);
+            dispatch(new AddTransactionLinesJob($data, $creatorId, $invoiceRecord->building_id));
+            // Utility::addTransactionLines($data, $creatorId, $invoiceRecord->building_id);
         }
         $vatAccount = ChartOfAccount::where('name', 'VAT Payable 5%')->where('created_by', '=', Auth::user()->creatorId())->first(); // TODO TAX
         $invoiceTotalTax = $invoice->getTotalTax();
@@ -1362,7 +1364,8 @@ class CustomerController extends Controller
             'reference_sub_id' => $invoice->items->pluck('tax')->join(','),
             'date' => $invoice->issue_date,
         ];
-        Utility::addTransactionLines($data, $creatorId, $invoice?->building_id);
+        dispatch(new AddTransactionLinesJob($data, $creatorId, $invoice->building_id));
+        // Utility::addTransactionLines($data, $creatorId, $invoice?->building_id);
 
         $uArr = [
             'invoice_name' => $invoice->name,
@@ -1609,7 +1612,7 @@ class CustomerController extends Controller
                         if ($receipt->payment_mode == 'Noqodi Payment') {
                             $PaymentDetail = json_decode($receipt->noqodi_info);
                             $gneralaccount = BankAccount::find($generalFundAccount->id);
-                            $data = [
+                            $data1 = [
                                 'account_id' => $gneralaccount->chart_account_id,
                                 'transaction_type' => 'Debit',
                                 'transaction_amount' => $PaymentDetail->generalFundAmount,
@@ -1618,9 +1621,10 @@ class CustomerController extends Controller
                                 'reference_sub_id' => 0,
                                 'date' => $revenue->date,
                             ];
-                            Utility::addTransactionLines($data);
+                            dispatch(new AddTransactionLinesJob($data1, $creatorId, $buildingId));
+                            // Utility::addTransactionLines($data);
                             $reserveaccount = BankAccount::find($reserveFundAccount->id);
-                            $data = [
+                            $data2 = [
                                 'account_id' => $reserveaccount->chart_account_id,
                                 'transaction_type' => 'Debit',
                                 'transaction_amount' => $PaymentDetail->reservedFundAmount,
@@ -1629,10 +1633,11 @@ class CustomerController extends Controller
                                 'reference_sub_id' => 0,
                                 'date' => $revenue->date,
                             ];
-                            Utility::addTransactionLines($data);
+                            dispatch(new AddTransactionLinesJob($data2, $creatorId, $buildingId));
+                            // Utility::addTransactionLines($data);
                         } else {
                             $account = BankAccount::find($generalFundAccount->id);
-                            $data = [
+                            $data3 = [
                                 'account_id' => $account->chart_account_id,
                                 'transaction_type' => 'Debit',
                                 'transaction_amount' => $netAmount,
@@ -1641,7 +1646,8 @@ class CustomerController extends Controller
                                 'reference_sub_id' => 0,
                                 'date' => $revenue->date,
                             ];
-                            Utility::addTransactionLines($data);
+                            dispatch(new AddTransactionLinesJob($data3, $creatorId, $buildingId));
+                            // Utility::addTransactionLines($data);
                         }
 
                         // if ($vatAmount > 0) {
@@ -1957,7 +1963,7 @@ class CustomerController extends Controller
                             if ($receipt->payment_mode == 'Noqodi Payment') {
                                 $PaymentDetail = json_decode($receipt->noqodi_info);
                                 $gneralaccount = BankAccount::find($generalFundAccount->id);
-                                $data = [
+                                $data1 = [
                                     'account_id' => $gneralaccount->chart_account_id,
                                     'transaction_type' => 'Debit',
                                     'transaction_amount' => $PaymentDetail->generalFundAmount,
@@ -1966,9 +1972,10 @@ class CustomerController extends Controller
                                     'reference_sub_id' => 0,
                                     'date' => $revenue->date,
                                 ];
-                                Utility::addTransactionLines($data);
+                                dispatch(new AddTransactionLinesJob($data1, $creatorId, $buildingId));
+                                // Utility::addTransactionLines($data);
                                 $reserveaccount = BankAccount::find($reserveFundAccount->id);
-                                $data = [
+                                $data2 = [
                                     'account_id' => $reserveaccount->chart_account_id,
                                     'transaction_type' => 'Debit',
                                     'transaction_amount' => $PaymentDetail->reservedFundAmount,
@@ -1977,10 +1984,11 @@ class CustomerController extends Controller
                                     'reference_sub_id' => 0,
                                     'date' => $revenue->date,
                                 ];
-                                Utility::addTransactionLines($data);
+                                dispatch(new AddTransactionLinesJob($data2, $creatorId, $buildingId));
+                                // Utility::addTransactionLines($data);
                             } else {
                                 $account = BankAccount::find($generalFundAccount->id);
-                                $data = [
+                                $data3 = [
                                     'account_id' => $account->chart_account_id,
                                     'transaction_type' => 'Debit',
                                     'transaction_amount' => $netAmount,
@@ -1989,7 +1997,8 @@ class CustomerController extends Controller
                                     'reference_sub_id' => 0,
                                     'date' => $revenue->date,
                                 ];
-                                Utility::addTransactionLines($data);
+                                dispatch(new AddTransactionLinesJob($data3, $creatorId, $buildingId));
+                                // Utility::addTransactionLines($data);
                             }
 
                             if ($receipt->payment_mode == 'Noqodi Payment') {

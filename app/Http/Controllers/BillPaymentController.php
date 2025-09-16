@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BankAccount;
 use App\Models\Bill;
+use App\Models\Vender;
+use App\Models\Utility;
+use App\Models\BankAccount;
 use App\Models\BillPayment;
 use App\Models\TransferType;
-use App\Models\Vender;
 use Illuminate\Http\Request;
+use App\Models\ChartOfAccount;
+use App\Models\TransactionLines;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use App\Models\StakeholderTransactionLine;
 
 class BillPaymentController extends Controller
 {
@@ -182,48 +186,101 @@ class BillPaymentController extends Controller
         $validator = Validator::make($request->all(), [
             'date' => 'required|date',
             'amount' => 'required|numeric|min:1',
-            'account_id' => 'required|exists:bank_accounts,id',
+            // 'account_id' => 'required|exists:bank_accounts,id',
             'description' => 'nullable|string',
             'payment_receipt' => 'nullable|file|mimes:jpeg,png,pdf',
             'bill_id' => 'required|exists:bills,id',
-            'adjusted_amount' => 'required|numeric|min:1',
+            // 'adjusted_amount' => 'required|numeric|min:1',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'errors' => $validator->errors()]);
         }
-
         $billPayment = BillPayment::find($id);
         if ($billPayment) {
             $billPayment->date = $request->date;
-            $billPayment->amount = $request->adjusted_amount;
-            $billPayment->account_id = $request->account_id;
+            $billPayment->amount = $request->amount;
             $billPayment->description = $request->description;
-            $billPayment->bill_id = $request->bill_id; // Ensure bill_id is updated
-
             if ($request->hasFile('payment_receipt')) {
                 $fileName = time() . '_' . $request->file('payment_receipt')->getClientOriginalName();
                 $fileContent = file_get_contents($request->file('payment_receipt'));
                 Storage::disk('s3')->put($fileName, $fileContent);
                 $billPayment->add_receipt = $fileName;
             }
-
             $billPayment->save();
 
-            $billModel = Bill::find($request->bill_id);
-            $billModel->status = $billModel->getDue() <= $request->adjusted_amount ? 0 : $billModel->status;
-            $billModel->save();
         }
-
-        return response()->json(['success' => true, 'message' => __('Bill Payment updated successfully.'), 'redirect' => route('BillPayment.index')]);
+        $billPayment->updateVendorBalance();
+        
+        $billModel = Bill::find($billPayment->bill_id);
+        $billPaymentAmount = BillPayment::where('bill_id', $billPayment->bill_id)->sum('amount');
+        $billModel->total_due = $billModel->total_amount - $billPaymentAmount;
+        $billModel->save();
+        $accountId = BankAccount::find($billPayment->account_id);
+        $data = [
+            'account_id' => $accountId->chart_account_id,
+            'transaction_type' => 'Credit',
+            'transaction_amount' => $billPayment->amount,
+            'reference' => 'Bill Payment',
+            'reference_id' => $billPayment->bill_id,
+            'reference_sub_id' => $billPayment->id,
+            'date' => $billPayment->date,
+        ];
+        Utility::addTransactionLines($data);
+        $vender = Vender::where('id', $billModel->vender_id)->first();
+        $vendorLedger = ChartOfAccount::where('name', $vender->name)->where('building_id', $billModel->building_id)->first();
+            if ($vendorLedger) {
+                $data = [
+                    'account_id' => $vendorLedger->id,
+                    'transaction_type' => 'Debit',
+                    'transaction_amount' => $billPaymentAmount,
+                    'reference' => 'Bill Payment',
+                    'reference_id' => $billModel->id,
+                    'reference_sub_id' => 0,
+                    'date' => $billModel->bill_date,
+            ];
+            Utility::addTransactionLines($data);
+        }
+        return redirect()->route('BillPayment.index')->with('success', __('Bill Payment updated successfully.'));
     }
 
     public function destroy($id)
     {
         if (\Auth::user()->can('delete bill')) {
             $billPayment = BillPayment::find($id);
+            $billId = $billPayment->bill_id;
+            $vendorId = $billPayment->vender_id;
+            $billPaymentId = $billPayment->id;
             if ($billPayment) {
+                $bill = Bill::find($billId);
+                $amount = $bill->total_amount;
+                TransferType::where('transferable_id', $billPayment->id)->where('transferable_type', BillPayment::class)->delete();
                 $billPayment->delete();
+                $billPaymentAmount = BillPayment::where('bill_id', $billId)->sum('amount');
+                $totalDue=$amount-$billPaymentAmount;
+                $vender = Vender::where('id', $bill->vender_id)->first();
+                $vendorLedger = ChartOfAccount::where('name', $vender->name)->first();
+                TransactionLines::where('reference_id', $bill->id)->where('reference', 'Bill Payment')->where('account_id', $vendorLedger->id)->delete();
+                TransactionLines::where('reference_id', $bill->id)->where('reference', 'Bill Payment')->where('reference_sub_id', $billPaymentId)->delete();
+                StakeholderTransactionLine::where('vender_id', $bill->vender_id)->where('reference_id', $billPaymentId)->where('reference', 'Bill Payment')->delete();
+                if($billPaymentAmount > 0){  
+                    if ($vendorLedger) {
+                        $data = [
+                            'account_id' => $vendorLedger->id,
+                            'transaction_type' => 'Debit',
+                            'transaction_amount' => $billPaymentAmount,
+                            'reference' => 'Bill Payment',
+                            'reference_id' => $bill->id,
+                            'reference_sub_id' => 0,
+                            'date' => $bill->bill_date,
+                    ];
+                    Utility::addTransactionLines($data);
+                    }
+                }
+                $bill->update([
+                    'total_due' => $totalDue,
+                    'status' => $billPaymentAmount <= 0 ? 1 : $bill->status,
+                ]);
                 return redirect()->route('BillPayment.index')->with('success', __('Bill Payment deleted successfully.'));
             } else {
                 return redirect()->route('BillPayment.index')->with('error', __('Bill Payment not found.'));

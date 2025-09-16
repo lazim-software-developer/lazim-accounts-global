@@ -71,9 +71,11 @@
                                         class="ti ti-clock mr-2"></i>{{ __('Created on ') }}{{ \Auth::user()->dateFormat($bill->bill_date) }}
                                 </p>
                                 @can('edit bill')
+                                @if($bill->status == 0)
                                     <a href="{{ route('bill.edit', \Crypt::encrypt($bill->id)) }}" class="btn btn-sm btn-primary"
                                         data-bs-toggle="tooltip" data-original-title="{{ __('Edit') }}"><i
                                             class="ti ti-edit mr-2"></i>{{ __('Edit') }}</a>
+                                @endif
                                 @endcan
                             </div>
                             <div class="col-md-6 col-lg-4 col-xl-4">

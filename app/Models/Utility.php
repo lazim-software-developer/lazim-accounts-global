@@ -2369,6 +2369,8 @@ class Utility extends Model
     public static function addTransactionLines($data, $created_by = null, $buildingId = null)
     {
         Log::info('Adding transaction lines: ' . json_encode($data));
+        Log::info('Adding transaction lines created_by: ' . $created_by);
+        Log::info('Adding transaction lines buildingId: ' . $buildingId);
         $existingTransaction = TransactionLines::where('reference_id', $data['reference_id'])
             ->where('account_id', $data['account_id'])
             ->where('reference_sub_id', $data['reference_sub_id'])

@@ -2,7 +2,7 @@
 <div class="modal-body">
     <div class="header text-center">
         <h2>Bill Payment</h2>
-        <p class="text-muted">Process payment for bill #12345</p>
+        <p class="text-muted">Process payment for bill {{ Auth::user()->billNumberFormat($bill->bill_id) }}</p>
     </div>
     <div class="row">
         <div class="form-group col-md-6">
@@ -31,6 +31,16 @@
                             {{ Form::number('bank_details[0][amount]', '', ['class' => 'form-control amount-input', 'required' => 'required', 'step' => '0.01', 'id' => 'amount_1']) }}
                         </div>
                     </div>
+                    <div class="form-group col-md-12">
+                        {{ Form::label('add_receipt', __('Payment Receipt'), ['class' => 'form-label']) }}
+                        <div class="choose-file form-group">
+                            <label for="image" class="form-label">
+                                <input type="file" name="bank_details[0][add_receipt]" id="image" class="form-control add_receipt-input"
+                                    accept="image/*, .txt, .rar, .zip">
+                            </label>
+                            <p class="upload_file"></p>
+                        </div>
+                    </div>
                     <div
                         class="form-group col-md-2 d-flex align-items-end justify-content-center remove-button-container">
                         <button type="button" class="btn btn-danger remove-account-item" style="display: none;"><i
@@ -54,7 +64,7 @@
             {{ Form::textarea('description', '', ['class' => 'form-control', 'rows' => 3]) }}
         </div>
 
-        <div class="form-group col-md-12">
+        <!-- <div class="form-group col-md-12">
             {{ Form::label('add_receipt', __('Payment Receipt'), ['class' => 'form-label']) }}
             <div class="choose-file form-group">
                 <label for="image" class="form-label">
@@ -63,7 +73,7 @@
                 </label>
                 <p class="upload_file"></p>
             </div>
-        </div>
+        </div> -->
 
 
 
@@ -399,11 +409,14 @@
             clone.setAttribute('data-item-id', formState.accountCounter);
             clone.querySelector('.account-select').id = `account_id_${formState.accountCounter}`;
             clone.querySelector('.amount-input').id = `amount_${formState.accountCounter}`;
+            clone.querySelector('.add_receipt-input').id = `add_receipt_${formState.accountCounter}`;
             //update name tag for input
             clone.querySelector('.account-select').name =
                 `bank_details[${formState.accountCounter - 1}][account_id]`;
             clone.querySelector('.amount-input').name =
                 `bank_details[${formState.accountCounter  - 1}][amount]`;
+            clone.querySelector('.add_receipt-input').name =
+                `bank_details[${formState.accountCounter  - 1}][add_receipt]`;
             clone.querySelector('.remove-account-item').style.display = 'inline-block';
             // Add the clone to the repeater container
             document.querySelector('.account-repeater').appendChild(clone);
@@ -429,9 +442,11 @@
                 item.setAttribute('data-item-id', newId);
                 item.querySelector('.account-select').id = `account_id_${newId}`;
                 item.querySelector('.amount-input').id = `amount_${newId}`;
+                item.querySelector('.add_receipt-input').id = `add_receipt_${newId}`;
                 // update name tags for bank account
                 item.querySelector('.account-select').name = `bank_details[${newId - 1}][account_id]`;
                 item.querySelector('.amount-input').name = `bank_details[${newId - 1}][amount]`;
+                item.querySelector('.add_receipt-input').name = `bank_details[${newId - 1}][add_receipt]`;
                 // Show/hide remove button based on number of items
                 const removeButton = item.querySelector('.remove-account-item');
                 if (removeButton) {
