@@ -1,0 +1,349 @@
+@extends('layouts.admin')
+@php
+    $CurrentBuilding = \Auth::user()->currentBuilding();
+@endphp
+@push('script-page')
+@endpush
+@section('page-title')
+    {{ __('Manage Vendor-Detail') }}
+@endsection
+@section('breadcrumb')
+    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('Dashboard') }}</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('vender.index') }}">{{ __('Vendor') }}</a></li>
+    <li class="breadcrumb-item">{{ $vendor['name'] }}</li>
+@endsection
+
+@section('action-btn')
+    <div class="float-end">
+        @if ($CurrentBuilding)
+            <a href="#" data-size="md" data-bs-toggle="tooltip" title="{{ __('Sync Bill') }}"
+                data-url="{{ route('bill.billPopup',$vendor->id) }}" data-ajax-popup="true"
+                data-title="{{ __('Sync Bill') }}" class="btn btn-sm btn-primary">
+                {{ __('Sync Bill') }}
+            </a>
+        @endif
+        @can('create bill')
+            <a href="{{ route('bill.create', $vendor->id) }}" class="btn btn-sm btn-primary">
+                <i class="ti ti-plus"> </i>{{ __('Create Bill') }}
+            </a>
+        @endcan
+        <a href="{{ route('vender.statement', $vendor['id']) }}" class="btn btn-sm btn-primary">
+            {{ __('Statement') }}
+        </a>
+        @can('edit vender')
+            <a href="#" class="btn btn-sm btn-primary" data-size="xl"
+                data-url="{{ route('vender.edit', $vendor['id']) }}" data-ajax-popup="true" title="{{ __('Edit') }}"
+                data-bs-toggle="tooltip" data-original-title="{{ __('Edit') }}">
+                <i class="ti ti-edit"></i>
+            </a>
+        @endcan
+        @can('delete vender')
+            {!! Form::open([
+                'method' => 'DELETE',
+                'route' => ['vender.destroy', $vendor['id']],
+                'class' => 'delete-form-btn',
+                'id' => 'delete-form-' . $vendor['id'],
+            ]) !!}
+            <a href="#" class="btn btn-sm btn-danger bs-pass-para" data-bs-toggle="tooltip" title="{{ __('Delete') }}"
+                data-original-title="{{ __('Delete') }}"
+                data-confirm="{{ __('Are You Sure?') . '|' . __('This action can not be undone. Do you want to continue?') }}"
+                data-confirm-yes="document.getElementById('delete-form-{{ $vendor['id'] }}').submit();">
+                <i class="ti ti-trash text-white"></i>
+            </a>
+            {!! Form::close() !!}
+        @endcan
+    </div>
+@endsection
+
+@section('content')
+    <div class="row">
+        <div class="col-md-6 col-lg-6 col-xl-6">
+            <div class="card pb-0 customer-detail-box customer_card">
+                <div class="card-body" style=" margin-bottom: 50px;">
+                    <h3 class="card-title">{{ __('Vendor Info') }}</h5>
+                        <p class="card-text mb-0">{{ $vendor->name }}</p>
+                        <p class="card-text mb-0">{{ $vendor->email }}</p>
+                        <p class="card-text mb-0">{{ $vendor->contact }}</p>
+                        <p class="card-text mb-0">{{ $vendor->tax_number }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-6 col-xl-6">
+            <div class="card pb-0 customer-detail-box customer_card">
+                <div class="card-body">
+                    <h3 class="card-title">{{ __('Billing Info') }}</h3>
+                    <p class="card-text mb-0">{{ $vendor->billing_name }}</p>
+                    <p class="card-text mb-0">{{ $vendor->billing_address }}</p>
+                    <p class="card-text mb-0">
+                        {{ $vendor->billing_city . ', ' . $vendor->billing_state . ', ' . $vendor->billing_zip }}</p>
+                    <p class="card-text mb-0">{{ $vendor->billing_country }}</p>
+                    <p class="card-text mb-0">{{ $vendor->billing_phone }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-4 col-xl-4">
+            <!-- <div class="card pb-0 customer-detail-box customer_card">
+                <div class="card-body">
+                    <h3 class="card-title">{{ __('Shipping Info') }}</h3>
+                    <p class="card-text mb-0">{{ $vendor->shipping_name }}</p>
+                    <p class="card-text mb-0">{{ $vendor->shipping_address }}</p>
+                    <p class="card-text mb-0">
+                        {{ $vendor->shipping_city . ', ' . $vendor->shipping_state . ', ' . $vendor->shipping_zip }}</p>
+                    <p class="card-text mb-0">{{ $vendor->shipping_country }}</p>
+                    <p class="card-text mb-0">{{ $vendor->shipping_phone }}</p>
+                </div>
+            </div> -->
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card pb-0">
+                <div class="card-body">
+                    <h3 class="card-title">{{ __('Company Info') }}</h3>
+                    <div class="row">
+                        @php
+                            $totalBillSum = $vendor->vendorTotalBillSum($vendor['id']);
+                            $totalBill = $vendor->vendorTotalBill($vendor['id']);
+                            $averageSale = $totalBillSum != 0 ? $totalBillSum / $totalBill : 0;
+                            $totalBillSumCurrentYear = $vendor->vendorTotalBillSumCurrentYear($vendor['id']);
+                            $vendorTotalBillCurrentYear = $vendor->vendorTotalBillCurrentYear($vendor['id']);
+                            $billPaymentForCurrentYear = $vendor->billPaymentForCurrentYear($vendor['id']);
+                        @endphp
+                        <div class="col-md-3 col-sm-6">
+                            <div class="p-4">
+                                <p class="card-text mb-0">{{ __('Vendor') }}</p>
+                                <h6 class="report-text mb-3">{{ $vendor->name }}</h6>
+                                <p class="card-text mb-0">{{ __('Total Sum of Bills') }}</p>
+                                <h6 class="report-text mb-0">{{ $totalBillSum }}</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="p-4">
+                                <p class="card-text mb-0">{{ __('Quantity of Bills') }}</p>
+                                <h6 class="report-text mb-3">{{ $totalBill }}</h6>
+                                <p class="card-text mb-0">{{ __('Quantity of Bills') }}  ({{$vendor->currentYear()}})</p>
+                                <h6 class="report-text mb-3">{{ $vendorTotalBillCurrentYear }}</h6>
+                                <p class="card-text mb-0">{{ __('Total Sum of Bills') }}  ({{$vendor->currentYear()}})</p>
+                                <h6 class="report-text mb-3">{{ $totalBillSumCurrentYear }}</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="p-4">
+                                <p class="card-text mb-0">{{ __('Balance') }}</p>
+                                <h6 class="report-text mb-3">{{ \Auth::user()->priceFormat($vendor->balance,true) }}</h6>
+                                <p class="card-text mb-0">{{ __('Average Sales') }}</p>
+                                <h6 class="report-text mb-0">{{ $averageSale }}</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="p-4">
+                                <p class="card-text mb-0">{{ __('Overdue') }}</p>
+                                <h6 class="report-text mb-3">
+                                    {{ $vendor->vendorOverdue($vendor->id) }}</h6>
+
+                                <p class="card-text mb-0">{{ __('Bill Payment') }}  ({{$vendor->currentYear()}})</p>
+                                <h6 class="report-text mb-3">
+                                    {{ $vendor->billPaymentForCurrentYear($vendor->id) }}</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <h5 class="h4 d-inline-block font-weight-400 mb-4">{{ __('Bills') }}</h5>
+            <div class="card">
+                <div class="card-body table-border-style">
+                    <div class="table-responsive">
+                        <table class="table datatable">
+                            <thead>
+                                <tr>
+                                    <th>{{ __('Bill') }}</th>
+                                    <th>{{ __('Bill Date') }}</th>
+                                    <th>{{ __('Due Date') }}</th>
+                                    <th>{{ __('Amount Due') }}</th>
+                                    <th>{{ __('Status') }}</th>
+                                    @if (Gate::check('edit bill') || Gate::check('delete bill') || Gate::check('show bill'))
+                                        <th width="10%"> {{ __('Action') }}</th>
+                                    @endif
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach ($vendor->vendorBill($vendor->id) as $bill)
+                                    <tr class="font-style">
+                                        <td class="Id">
+                                            @if (\Auth::guard('vender')->check())
+                                                <a href="{{ route('vender.bill.show', \Crypt::encrypt($bill->id)) }}"
+                                                    class="btn btn-outline-primary">{{ AUth::user()->billNumberFormat($bill->bill_id) }}
+                                                </a>
+                                            @else
+                                                <a href="{{ route('bill.show', \Crypt::encrypt($bill->id)) }}"
+                                                    class="btn btn-outline-primary">{{ AUth::user()->billNumberFormat($bill->bill_id) }}
+                                                </a>
+                                            @endif
+                                        </td>
+                                        <td>{{ Auth::user()->dateFormat($bill->bill_date) }}</td>
+                                        <td>
+                                            @if ($bill->due_date < date('Y-m-d'))
+                                                <p class="text-danger"> {{ \Auth::user()->dateFormat($bill->due_date) }}
+                                                </p>
+                                            @else
+                                                {{ \Auth::user()->dateFormat($bill->due_date) }}
+                                            @endif
+                                        </td>
+                                        <td>{{ \Auth::user()->priceFormat($bill->getDue()) }}</td>
+                                        <td>
+                                            @if ($bill->status == 0)
+                                                <span
+                                                    class="badge bg-primary p-2 px-3 rounded">{{ __(\App\Models\Invoice::$statues[$bill->status]) }}</span>
+                                            @elseif($bill->status == 1)
+                                                <span
+                                                    class="badge bg-warning p-2 px-3 rounded">{{ __(\App\Models\Invoice::$statues[$bill->status]) }}</span>
+                                            @elseif($bill->status == 2)
+                                                <span
+                                                    class="badge bg-danger p-2 px-3 rounded">{{ __(\App\Models\Invoice::$statues[$bill->status]) }}</span>
+                                            @elseif($bill->status == 3)
+                                                <span
+                                                    class="badge bg-info p-2 px-3 rounded">{{ __(\App\Models\Invoice::$statues[$bill->status]) }}</span>
+                                            @elseif($bill->status == 4)
+                                                <span
+                                                    class="badge bg-success p-2 px-3 rounded">{{ __(\App\Models\Invoice::$statues[$bill->status]) }}</span>
+                                            @endif
+                                        </td>
+                                        @if (Gate::check('edit bill') || Gate::check('delete bill') || Gate::check('show bill'))
+                                            <td class="Action">
+                                                <span>
+                                                    @can('duplicate bill')
+                                                        {{-- <div class="action-btn bg-success ms-2">
+                                                        <a href="#" class="mx-3 btn btn-sm  align-items-center" data-bs-toggle="tooltip" title="{{__('Duplicate Bill')}}" data-original-title="{{__('Duplicate')}}" data-confirm="You want to confirm this action. Press Yes to continue or Cancel to go back" data-confirm-yes="document.getElementById('duplicate-form-{{$bill->id}}').submit();">
+                                                            <i class="ti ti-copy text-white text-white"></i>
+                                                            {!! Form::open(['method' => 'get', 'route' => ['bill.duplicate', $bill->id],'id'=>'duplicate-form-'.$bill->id]) !!}{!! Form::close() !!}
+                                                        </a>
+                                                    </div> --}}
+
+
+
+                                                        <div class="action-btn bg-secondary ms-2">
+
+                                                            {!! Form::open([
+                                                                'method' => 'get',
+                                                                'route' => ['bill.duplicate', $bill->id],
+                                                                'id' => 'bill-duplicate-form-' . $bill->id,
+                                                            ]) !!}
+                                                            <a href="#"
+                                                                class="mx-3 btn btn-sm align-items-center bs-pass-para"
+                                                                data-bs-toggle="tooltip" title="{{ __('Duplicate Bill') }}"
+                                                                data-original-title="{{ __('Duplicate') }}"
+                                                                data-confirm="{{ __('You want to confirm this action. Press Yes to continue or Cancel to go back') }}"
+                                                                data-confirm-yes="document.getElementById('bill-duplicate-form-{{ $bill->id }}').submit();">
+                                                                <i class="ti ti-copy text-white text-white"></i>
+                                                            </a>
+                                                            {!! Form::close() !!}
+
+                                                        </div>
+                                                    @endcan
+                                                    @can('show bill')
+                                                        @if (\Auth::guard('vender')->check())
+                                                            <div class="action-btn bg-info ms-2">
+                                                                <a href="{{ route('vender.bill.show', \Crypt::encrypt($bill->id)) }}"
+                                                                    class="mx-3 btn btn-sm  align-items-center"
+                                                                    data-bs-toggle="tooltip" title="{{ __('Show') }}"
+                                                                    data-original-title="{{ __('Detail') }}">
+                                                                    <i class="ti ti-eye text-white text-white"></i>
+                                                                </a>
+                                                            </div>
+                                                        @else
+                                                            <div class="action-btn bg-info ms-2">
+                                                                <a href="{{ route('bill.show', \Crypt::encrypt($bill->id)) }}"
+                                                                    class="mx-3 btn btn-sm  align-items-center"
+                                                                    data-bs-toggle="tooltip" title="{{ __('Show') }}"
+                                                                    data-original-title="{{ __('Detail') }}">
+                                                                    <i class="ti ti-eye text-white text-white"></i>
+                                                                </a>
+                                                            </div>
+                                                        @endif
+                                                    @endcan
+                                                    @can('edit bill')
+                                                        <div class="action-btn bg-primary ms-2">
+                                                            <a href="{{ route('bill.edit', \Crypt::encrypt($bill->id)) }}"
+                                                                class="mx-3 btn btn-sm  align-items-center"
+                                                                data-bs-toggle="tooltip" title="{{ __('Edit') }}"
+                                                                data-original-title="{{ __('Edit') }}">
+                                                                <i class="ti ti-pencil text-white"></i>
+                                                            </a>
+                                                        </div>
+                                                    @endcan
+                                                    @can('delete bill')
+                                                        <div class="action-btn bg-danger ms-2">
+                                                            {!! Form::open([
+                                                                'method' => 'DELETE',
+                                                                'route' => ['bill.destroy', $bill->id],
+                                                                'id' => 'delete-form-' . $bill->id,
+                                                            ]) !!}
+
+                                                            <a href="#"
+                                                                class="mx-3 btn btn-sm  align-items-center bs-pass-para"
+                                                                data-bs-toggle="tooltip"
+                                                                data-original-title="{{ __('Delete') }}"
+                                                                title="{{ __('Delete') }}"
+                                                                data-confirm="{{ __('Are You Sure?') . '|' . __('This action can not be undone. Do you want to continue?') }}"
+                                                                data-confirm-yes="document.getElementById('delete-form-{{ $bill->id }}').submit();">
+                                                                <i class="ti ti-trash text-white text-white"></i>
+                                                            </a>
+                                                            {!! Form::close() !!}
+                                                        </div>
+                                                    @endcan
+                                                </span>
+                                            </td>
+                                        @endif
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <h5 class="h4 d-inline-block font-weight-400 mb-4">{{ __('Bill Payments') }}</h5>
+            <div class="card">
+                <div class="card-body table-border-style">
+                    <div class="table-responsive">
+                        <table class="table datatable">
+                            <thead>
+                                <tr>
+                                    <th>{{ __('Bill Number') }}</th>
+                                    <th>{{ __('Date') }}</th>
+                                    <th>{{ __('Amount') }}</th>
+                                    <th>{{ __('Payment Method') }}</th>
+                                    <th>{{ __('Reference') }}</th>
+                                    <th>{{ __('Description') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($vendor->billPayments() as $payment)
+                                    <tr class="font-style">
+                                        <td>{{ Auth::user()->billNumberFormat($payment->bill->bill_id) }}</td>
+                                        <td>{{ Auth::user()->dateFormat($payment->date) }}</td>
+                                        <td>{{ Auth::user()->priceFormat($payment->amount) }}</td>
+                                        <td>{{ !empty($payment->payment_method) ? __($payment->payment_method) : '--' }}</td>
+                                        <td>{{ !empty($payment->reference) ? $payment->reference : '--' }}</td>
+                                        <td>{{ !empty($payment->description) ? $payment->description : '--' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection

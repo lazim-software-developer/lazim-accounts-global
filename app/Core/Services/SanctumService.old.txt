@@ -1,0 +1,115 @@
+<?php
+
+namespace App\Core\Services;
+
+use App\Core\Models\PersonalAccessToken;
+use App\Models\User;
+use Carbon\Carbon;
+
+class SanctumService
+{
+    /**
+     * Generate Access & Refresh Tokens
+     */
+    public function generateTokens(User $user)
+    {
+        try {
+            // Soft delete old refresh tokens
+            PersonalAccessToken::where('tokenable_id', $user->id)
+                ->where('name', 'refresh_token')
+                ->delete(); // Uses soft delete from the model
+
+            // Generate new access token
+            $accessToken = $user->createToken('access_token', ['*'])->plainTextToken;
+
+            // Generate and store refresh token
+            $refreshToken = Str::random(64);
+            $user->tokens()->create([
+                'name' => 'refresh_token',
+                'token' => hash('sha256', $refreshToken),
+                'expires_at' => Carbon::now()->addDays(30),
+            ]);
+
+            return [
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshToken,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error generating Sanctum tokens: ' . $e->getMessage());
+            throw new \Exception('Could not generate tokens');
+        }
+    }
+
+    /**
+     * Refresh Access Token using Refresh Token
+     */
+    public function refreshAccessToken(string $refreshToken)
+    {
+        try {
+            $hashedToken = hash('sha256', $refreshToken);
+
+            // Retrieve the refresh token, including soft-deleted ones
+            $tokenRecord = PersonalAccessToken::withTrashedRecords()
+                ->where('token', $hashedToken)
+                ->where('name', 'refresh_token')
+                ->where('expires_at', '>', Carbon::now())
+                ->first();
+
+            if (!$tokenRecord || $tokenRecord->trashed()) {
+                throw new \Exception('Invalid or expired refresh token');
+            }
+
+            $user = $tokenRecord->tokenable;
+
+            // Soft delete the old access and refresh tokens
+            $user->tokens()->where('name', 'access_token')->delete();
+            $tokenRecord->delete(); // Soft delete the refresh token after use
+
+            // Generate new tokens
+            return $this->generateTokens($user);
+        } catch (\Exception $e) {
+            Log::error('Error refreshing token: ' . $e->getMessage());
+            throw new \Exception('Could not refresh token');
+        }
+    }
+
+    /**
+     * Revoke all tokens for the user (Soft Delete)
+     */
+    public function revokeTokens(User $user)
+    {
+        try {
+            $user->tokens()->delete(); // Soft delete all tokens
+        } catch (\Exception $e) {
+            Log::error('Error revoking tokens: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Restore a soft-deleted token
+     */
+    public function restoreToken($tokenId)
+    {
+        $token = PersonalAccessToken::onlyDeleted()->find($tokenId);
+
+        if (!$token) {
+            throw new \Exception('Token not found or not soft deleted');
+        }
+
+        return $token->restoreRecord($token);
+    }
+
+    /**
+     * Permanently delete a soft-deleted token
+     */
+    public function permanentlyDeleteToken($tokenId)
+    {
+        $token = PersonalAccessToken::onlyDeleted()->find($tokenId);
+
+        if (!$token) {
+            throw new \Exception('Token not found or not soft deleted');
+        }
+
+        return $token->forceDeleteRecord($token);
+    }
+}

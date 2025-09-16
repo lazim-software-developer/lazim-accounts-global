@@ -1,0 +1,397 @@
+{
+	"info": {
+		"_postman_id": "5e946944-1d1c-444b-bd46-e7bcef3e66d9",
+		"name": "LazimAccounting",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "3039005"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "RefreshToken",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"refresh_token\": \"31HfeMhlMHNQwzt08C857GRHfdOIA95h3gWK9TRsb2xTu64VdSHife1J230yG521\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_HOST}}auth/refresh",
+							"host": [
+								"{{API_HOST}}auth"
+							],
+							"path": [
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DeleteToken",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"token_id\": 14\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_HOST}}auth/delete-token",
+							"host": [
+								"{{API_HOST}}auth"
+							],
+							"path": [
+								"delete-token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "RestoreToken",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"token_id\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_HOST}}auth/restore-token",
+							"host": [
+								"{{API_HOST}}auth"
+							],
+							"path": [
+								"restore-token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_HOST}}auth/logout",
+							"host": [
+								"{{API_HOST}}auth"
+							],
+							"path": [
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetAuthenticatedUser",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_HOST}}auth/user",
+							"host": [
+								"{{API_HOST}}auth"
+							],
+							"path": [
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    let res = JSON.parse(pm.response.text());\r",
+									"    let token = res.data.token;\r",
+									"    console.log(token)\r",
+									"    postman.setEnvironmentVariable(\"TOKEN\", token);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"info@syoam.com\",\r\n  \"password\": \"Syoam@2024\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_HOST}}auth/login",
+							"host": [
+								"{{API_HOST}}auth"
+							],
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Report",
+			"item": [
+				{
+					"name": "Invoice",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"from_date\": \"2024-01-01\", // required\r\n    \"to_date\": \"2024-12-31\", // required\r\n    \"customer\": \"276\", // required\r\n     //\"status\": \"Unpaid\" // optional -- 'Draft', 'Sent', 'Unpaid', 'Partially Paid', 'Paid'\r\n    \"page\": 1, // required\r\n    \"per_page\": 4, // optional\r\n    \"order_by\":\"created_at\", // optional\r\n    \"direction\":\"desc\" // optional\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_HOST}}report/invoice",
+							"host": [
+								"{{API_HOST}}report"
+							],
+							"path": [
+								"invoice"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "aging",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"year\": \"2023\",  // required\r\n    \"building\": \"8\",  // required\r\n    \"page\": 1,  // required\r\n    \"per_page\": 100, // optional\r\n    \"order_by\":\"flat_id\", // optional\r\n    \"direction\":\"desc\" // optional\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_HOST}}report/aging",
+							"host": [
+								"{{API_HOST}}report"
+							],
+							"path": [
+								"aging"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "receipt",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"page\": 1, // required\r\n    \"per_page\": 100, // optional\r\n    // \"order_by\": \"created_at\", // optional\r\n    // \"direction\": \"desc\", // optional\r\n    \"from_date\": \"2024-01-01\", // required\r\n    \"to_date\": \"2024-12-31\", // required\r\n    \"customer\": \"1466\" // required\r\n    // \"account\":\"\", // optional\r\n    // \"category\":\"\" // optional\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_HOST}}report/receipt",
+							"host": [
+								"{{API_HOST}}report"
+							],
+							"path": [
+								"receipt"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "bill",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"page\": 1, // required\r\n    \"per_page\": 100, // optional\r\n    // \"order_by\": \"created_at\", // optional\r\n    // \"direction\": \"desc\", // optional\r\n    \"from_date\": \"2024-01-01\", // required\r\n    \"to_date\": \"2025-12-31\", // required\r\n    \"vender\": \"31\" // required\r\n    //\"status\": \"Unpaid\" // optional -- 'Draft', 'Sent', 'Unpaid', 'Partially Paid', 'Paid'\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_HOST}}report/bill",
+							"host": [
+								"{{API_HOST}}report"
+							],
+							"path": [
+								"bill"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
