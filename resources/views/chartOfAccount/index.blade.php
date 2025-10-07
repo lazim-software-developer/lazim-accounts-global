@@ -8,64 +8,125 @@
 @endsection
 @push('css-page')
     <style>
+        /* Action buttons fix */
+        .tree-view .node-content .action {
+            width: 10%;
+            display: flex;
+            gap: 6px;
+            /* space between buttons */
+            flex-wrap: wrap;
+            /* agar jagah kam ho to neeche aa jaye */
+            justify-content: flex-start;
+        }
+
+        .tree-view .node-content .action .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            padding: 4px 6px;
+        }
+
+        /* Action buttons small size */
+        .tree-view .node-content .action .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            padding: 2px 4px;
+            /* small padding */
+            width: 20px;
+            /* fixed small square size */
+            height: 20px;
+        }
+
+        .tree-view .node-content .action .action-btn i {
+            font-size: 14px;
+            /* icon size */
+            line-height: 1;
+        }
+
+
         .tree-view {
             font-family: Arial, sans-serif;
         }
 
         .tree-view ul {
+            position: relative;
             list-style: none;
-            padding-left: 20px;
+            font-size: 12px;
+            padding-left: 0px;
         }
 
         .tree-view li {
             position: relative;
-            padding: 10px 0;
+            font-size: 12px;
+            /* padding: 10px 0; */
+            margin: 0;
         }
 
         .tree-view .node-toggle {
             cursor: pointer;
             position: absolute;
-            left: -20px;
-            top: 12px;
+            left: 2px;
+            top: 10px;
             font-size: 16px;
         }
 
         .tree-view .node-content {
             display: flex;
             align-items: center;
-            padding: 10px;
+            padding: 6px;
             border-bottom: 1px solid #dee2e6;
         }
 
         .tree-view .node-content>div {
-            flex: 1;
             text-align: left;
+            padding: 0 8px;
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
 
+        /* Code column */
         .tree-view .node-content .code {
             width: 10%;
+            padding-left: 20px;
         }
 
+        /* Name column - allow wrapping */
         .tree-view .node-content .name {
-            width: 20%;
+            width: 25%;
+            white-space: normal !important;
+            word-wrap: break-word;
+            overflow: hidden;
         }
 
+        /* Type column */
         .tree-view .node-content .type {
             width: 15%;
         }
 
+        /* Parent column */
         .tree-view .node-content .parent {
             width: 20%;
         }
 
+        /* Balance column */
         .tree-view .node-content .balance {
-            width: 15%;
+            width: 10%;
         }
 
+        /* Initial Balance column */
+        .tree-view .node-content .initial_balance {
+            width: 10%;
+        }
+
+        /* Status column */
         .tree-view .node-content .status {
             width: 10%;
         }
 
+        /* Action column */
         .tree-view .node-content .action {
             width: 10%;
         }
@@ -88,16 +149,19 @@
         }
 
         .tree-view .header>div {
-            flex: 1;
+            font-size: 12px;
             text-align: left;
+            padding: 0 18px;
         }
+
+
 
         .tree-view .header .code {
             width: 10%;
         }
 
         .tree-view .header .name {
-            width: 20%;
+            width: 25%;
         }
 
         .tree-view .header .type {
@@ -108,8 +172,12 @@
             width: 20%;
         }
 
+        .tree-view .header .initial_balance {
+            width: 10%;
+        }
+
         .tree-view .header .balance {
-            width: 15%;
+            width: 10%;
         }
 
         .tree-view .header .status {
@@ -118,6 +186,10 @@
 
         .tree-view .header .action {
             width: 10%;
+        }
+
+        .card-header {
+            padding: 15px 10px 5px 30px;
         }
 
         /* Style for custom dropdown with checkboxes */
@@ -131,6 +203,7 @@
             margin-bottom: 15px;
             cursor: pointer;
         }
+
 
         .dropdown-menu {
             display: none;
@@ -171,7 +244,6 @@
                     "_token": "{{ csrf_token() }}",
                 },
                 success: function(data) {
-
                     $('#parent').empty();
                     $('#parent').append('<option value="">Select an account</option>');
                     $.each(data, function(key, value) {
@@ -254,12 +326,9 @@
                 var button = $(this);
 
                 if (viewParam === 'all') {
-                    // Switch to View Less
-                    console.log(viewParam);
                     currentUrl.searchParams.delete('view');
                     button.html('<i class="ti ti-eye">View All</i>');
                 } else {
-                    // Switch to View All
                     currentUrl.searchParams.set('view', 'all');
                     button.html('<i class="ti ti-eye-off">View Less</i>');
                 }
@@ -267,11 +336,6 @@
                 window.location.href = currentUrl.toString();
             });
 
-            let firstNode = $('.tree-view ul > li');
-            if (firstNode.find('.child-nodes').length) {
-                firstNode.find('.child-nodes').addClass('active'); // show children
-                firstNode.find('.node-toggle').removeClass('ti-plus').addClass('ti-minus'); // change icon
-            }
         });
     </script>
 @endpush
@@ -283,8 +347,12 @@
                 data-size="lg" data-ajax-popup="true" data-title="{{ __('Create New Account') }}" class="btn btn-sm btn-primary">
                 <i class="ti ti-plus"></i>
             </a>
-            <a id="view-toggle" href="{{ route('chart-of-account.index', array_merge(['view' => 'all'], request()->query())) }}" title="{{ request()->has('view') && request()->get('view') === 'all' ? __('View Less') : __('View All') }}" class="btn btn-sm btn-primary">
-                <i class="ti {{ request()->has('view') && request()->get('view') === 'all' ? 'ti-eye-off' : 'ti-eye' }}">{{ request()->has('view') && request()->get('view') === 'all' ? __('View Less') : __('View All') }}</i>
+            <a href="#" id="view-toggle"
+                title="{{ request()->has('view') && request()->get('view') === 'all' ? __('View Less') : __('View All') }}"
+                class="btn btn-sm btn-primary">
+                <i class="ti {{ request()->has('view') && request()->get('view') === 'all' ? 'ti-eye-off' : 'ti-eye' }}">
+                    {{ request()->has('view') && request()->get('view') === 'all' ? __('View Less') : __('View All') }}
+                </i>
             </a>
         @endcan
     </div>
@@ -367,19 +435,19 @@
             </div>
         </div>
         @foreach ($chartAccounts as $type => $accounts)
-            {{-- @dd($chartAccounts) --}}
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
                         <h6>{{ $type }}</h6>
                     </div>
-                    <div class="card-body tree-view">
+                    <div class=" tree-view">
                         <!-- Table Header -->
                         <div class="header">
                             <div class="code">{{ __('Code') }}</div>
                             <div class="name">{{ __('Name') }}</div>
                             <div class="type">{{ __('Type') }}</div>
                             <div class="parent">{{ __('Parent Account Name') }}</div>
+                            <div class="initial_balance">{{ __('Initial Balance') }}</div>
                             <div class="balance">{{ __('Balance') }}</div>
                             <div class="status">{{ __('Status') }}</div>
                             <div class="action">{{ __('Action') }}</div>
@@ -422,6 +490,9 @@
                                         </div>
                                         <div class="parent">
                                             {{ !empty($account->parentAccount) ? $account->parentAccount->name : '-' }}
+                                        </div>
+                                        <div class="initial_balance">
+                                            {{ \Auth::user()->priceFormat($account->initial_balance) }}
                                         </div>
                                         <div class="balance">
                                             @if ($account->is_sync == 0)

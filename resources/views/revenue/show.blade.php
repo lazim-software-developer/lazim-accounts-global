@@ -44,11 +44,15 @@
                             </tr> -->
                             <tr>
                                 <th>{{ __('Owner') }}</th>
-                                <td>{{ !empty($revenue->customer) ? $revenue->customer->name : '-' }}</td>
+                                @php
+                                $customer=json_decode($revenue->customer_id);
+                                $customer=App\Models\Customer::find($customer[0]);
+                                @endphp
+                                <td>{{ !empty($customer) ? $customer->name : '-' }}</td>
                             </tr>
                             <tr>
                                 <th>{{ __('Unit') }}</th>
-                                <td>{{ !empty($revenue->customer->property_number) ? $revenue->customer->property_number : '-' }}</td>
+                                <td>{{ !empty($customer->property_number) ? $customer->property_number : '-' }}</td>
                             </tr>
                             <tr>
                                 <th>{{ __('Category') }}</th>
@@ -79,6 +83,15 @@
                                     @endif
                                 </td>
                             </tr>
+                            <tr>
+                                <th>{{ __('Reference Type') }}</th>
+                                <td>{{ match($revenue->reference_type) {
+                                'new_ref' => 'New Ref',
+                                'against_ref' => 'Against Ref', 
+                                'advance' => 'Advance',
+                                'on_account' => 'On Account',
+                                default => '-'
+                            } }}</td>                            </tr>
                         </table>
                     </div>
                 </div>

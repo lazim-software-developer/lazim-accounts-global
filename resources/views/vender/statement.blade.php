@@ -75,7 +75,7 @@
                                     {{ Form::label('until_date', __('Until Date'), ['class' => 'form-label']) }}<span
                                         class="text-danger">*</span>
                                     <div class="form-icon-user">
-                                        {{ Form::date('until_date', isset($data['until_date']) ? $data['until_date'] : null, ['class' => 'form-control pc-datepicker-1']) }}
+                                        {{ Form::date('until_date', isset($data['until_date']) ? $data['until_date'] : null, ['class' => 'form-control pc-datepicker-1', 'required' => 'required']) }}
 
                                     </div>
                                 </div>

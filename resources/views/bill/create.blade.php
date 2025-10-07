@@ -312,8 +312,8 @@
                                     <th width="20%">{{ __('Description') }}</th>
                                     <th width="15%">{{ __('Item') }}</th>
                                     <th width="10%">{{ __('Quantity') }}</th>
-                                    <th width="12%">{{ __('Price') }}</th>
-                                    <th width="10%">{{ __('Discount') }}</th>
+                                    <th width="10%">{{ __('Price') }}</th>
+                                    <th width="12%">{{ __('Discount') }}</th>
                                     <th width="10%">{{ __('Tax') }}
                                         @if($vatCharge)
                                         <br>

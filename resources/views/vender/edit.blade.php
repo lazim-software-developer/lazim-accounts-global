@@ -8,7 +8,7 @@
                 {{Form::label('name',__('Name'),array('class'=>'form-label')) }}
                 <div class="form-icon-user">
                     <span><i class="ti ti-address-card"></i></span>
-                    {{Form::text('name',null,array('class'=>'form-control','required'=>'required'))}}
+                    {{Form::text('name',null,array('class'=>'form-control','required'=>'required','placeholder'=>__('Enter Name')))}}
                 </div>
             </div>
         </div>
@@ -17,7 +17,7 @@
                 {{Form::label('contact',__('Contact'),['class'=>'form-label'])}}
                 <div class="form-icon-user">
                     <span><i class="ti ti-mobile-alt"></i></span>
-                    {{Form::text('contact',null,array('class'=>'form-control','required'=>'required'))}}
+                    {{Form::text('contact',null,array('class'=>'form-control','required'=>'required','placeholder'=>__('Enter Contact Number')))}}
                 </div>
             </div>
         </div>
@@ -25,7 +25,7 @@
             <div class="form-group">
                 {{Form::label('email',__('Email'),['class'=>'form-label'])}}
                 <div class="form-icon-user">
-                    {{Form::text('email',null,array('class'=>'form-control'))}}
+                    {{Form::text('email',null,array('class'=>'form-control','placeholder'=>__('Enter Email Address')))}}
                 </div>
             </div>
         </div>
@@ -34,7 +34,7 @@
                 {{Form::label('tax_number',__('Tax Number'),['class'=>'form-label'])}}
                 <div class="form-icon-user">
                     <span><i class="ti ti-crosshairs"></i></span>
-                    {{Form::text('tax_number',null,array('class'=>'form-control'))}}
+                    {{Form::text('tax_number',null,array('class'=>'form-control','placeholder'=>__('Enter Tax Number')))}}
                 </div>
             </div>
         </div>
@@ -52,7 +52,7 @@
             <div class="form-group">
                 {{Form::label('billing_name',__('Name'),array('class'=>'form-label')) }}
                 <div class="form-icon-user">
-                    {{Form::text('billing_name',null,array('class'=>'form-control'))}}
+                    {{Form::text('billing_name',null,array('class'=>'form-control','placeholder'=>__('Enter Billing Name')))}}
                 </div>
             </div>
         </div>
@@ -60,7 +60,7 @@
             <div class="form-group">
                 {{Form::label('billing_phone',__('Phone'),array('class'=>'form-label')) }}
                 <div class="form-icon-user">
-                    {{Form::text('billing_phone',null,array('class'=>'form-control'))}}
+                    {{Form::text('billing_phone',null,array('class'=>'form-control','placeholder'=>__('Enter Billing Phone Numbers')))}}
                 </div>
             </div>
         </div>
@@ -68,7 +68,7 @@
             <div class="form-group">
                 {{Form::label('billing_address',__('Address'),array('class'=>'form-label')) }}
                 <div class="input-group">
-                    {{Form::textarea('billing_address',null,array('class'=>'form-control','rows'=>3))}}
+                    {{Form::textarea('billing_address',null,array('class'=>'form-control','rows'=>3,'placeholder'=>__('Enter Billing Address')))}}
                 </div>
             </div>
         </div>
@@ -76,7 +76,7 @@
             <div class="form-group">
                 {{Form::label('billing_city',__('City'),array('class'=>'form-label')) }}
                 <div class="form-icon-user">
-                    {{Form::text('billing_city',null,array('class'=>'form-control'))}}
+                    {{Form::text('billing_city',null,array('class'=>'form-control','placeholder'=>__('Enter Billing City')))}}
                 </div>
             </div>
         </div>
@@ -84,7 +84,7 @@
             <div class="form-group">
                 {{Form::label('billing_state',__('State'),array('class'=>'form-label')) }}
                 <div class="form-icon-user">
-                    {{Form::text('billing_state',null,array('class'=>'form-control'))}}
+                    {{Form::text('billing_state',null,array('class'=>'form-control','placeholder'=>__('Enter Billing State')))}}
                 </div>
             </div>
         </div>
@@ -93,7 +93,7 @@
             <div class="form-group">
                 {{Form::label('billing_country',__('Country'),array('class'=>'form-label')) }}
                 <div class="form-icon-user">
-                    {{Form::text('billing_country',null,array('class'=>'form-control'))}}
+                    {{Form::text('billing_country',null,array('class'=>'form-control','placeholder'=>__('Enter Billing Country')))}}
                 </div>
             </div>
         </div>
@@ -101,7 +101,7 @@
             <div class="form-group">
                 {{Form::label('billing_zip',__('Zip Code'),array('class'=>'form-label')) }}
                 <div class="form-icon-user">
-                    {{Form::text('billing_zip',null,array('class'=>'form-control'))}}
+                    {{Form::text('billing_zip',null,array('class'=>'form-control','placeholder'=>__('Enter Billing Zip Code')))}}
                 </div>
             </div>
         </div>
@@ -119,7 +119,7 @@
                 <div class="form-group">
                     {{Form::label('shipping_name',__('Name'),array('class'=>'form-label')) }}
                     <div class="form-icon-user">
-                        {{Form::text('shipping_name',null,array('class'=>'form-control'))}}
+                        {{Form::text('shipping_name',null,array('class'=>'form-control','placeholder'=>__('Enter Shipping Name')))}}
                     </div>
                 </div>
             </div>
@@ -127,7 +127,7 @@
                 <div class="form-group">
                     {{Form::label('shipping_phone',__('Phone'),array('class'=>'form-label')) }}
                     <div class="form-icon-user">
-                        {{Form::text('shipping_phone',null,array('class'=>'form-control'))}}
+                        {{Form::text('shipping_phone',null,array('class'=>'form-control','placeholder'=>__('Enter Shipping Phone Number')))}}
                     </div>
                 </div>
             </div>
@@ -135,21 +135,21 @@
                 <div class="form-group">
                     {{Form::label('shipping_address',__('Address'),array('class'=>'form-label')) }}
                     <div class="input-group">
-                        {{Form::textarea('shipping_address',null,array('class'=>'form-control','rows'=>3))}}
+                        {{Form::textarea('shipping_address',null,array('class'=>'form-control','rows'=>3,'placeholder'=>__('Enter Shipping Address')))}}
                     </div>
                 </div>
             </div>
             <div class="col-lg-6 col-md-6 col-sm-6">
                 <div class="form-group">
                     {{Form::label('shipping_city',__('City'),array('class'=>'form-label')) }}
-                        {{Form::text('shipping_city',null,array('class'=>'form-control'))}}
+                        {{Form::text('shipping_city',null,array('class'=>'form-control','placeholder'=>__('Enter Shipping City')))}}
                     </div>
                 </div>
             <div class="col-lg-6 col-md-6 col-sm-6">
                 <div class="form-group">
                     {{Form::label('shipping_state',__('State'),array('class'=>'form-label')) }}
                     <div class="form-icon-user">
-                        {{Form::text('shipping_state',null,array('class'=>'form-control'))}}
+                        {{Form::text('shipping_state',null,array('class'=>'form-control','placeholder'=>__('Enter Shipping State')))}}
                     </div>
                 </div>
             </div>
@@ -158,7 +158,7 @@
                 <div class="form-group">
                     {{Form::label('shipping_country',__('Country'),array('class'=>'form-label')) }}
                     <div class="form-icon-user">
-                        {{Form::text('shipping_country',null,array('class'=>'form-control'))}}
+                        {{Form::text('shipping_country',null,array('class'=>'form-control','placeholder'=>__('Enter Shipping Country')))}}
                     </div>
                 </div>
             </div>
@@ -166,7 +166,7 @@
                 <div class="form-group">
                     {{Form::label('shipping_zip',__('Zip Code'),array('class'=>'form-label')) }}
                     <div class="form-icon-user">
-                        {{Form::text('shipping_zip',null,array('class'=>'form-control','placeholder'=>__('Enter User Email')))}}
+                        {{Form::text('shipping_zip',null,array('class'=>'form-control','placeholder'=>__('Enter Zip Code')))}}
                     </div>
                 </div>
             </div>

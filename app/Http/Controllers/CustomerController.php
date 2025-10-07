@@ -181,7 +181,7 @@ class CustomerController extends Controller
 
             $customer->is_enable_login =  $enableLogin;
 
-            $customer->lang = !empty($default_language) ? $default_language->value : '';
+            $customer->lang = !empty($default_language) ? $default_language->value : 'en';
             $customer->save();
             CustomField::saveData($customer, $request->customField);
 
@@ -628,7 +628,7 @@ class CustomerController extends Controller
 
     public function export()
     {
-        $name = 'owner_' . date('Y-m-d i:h:s');
+        $name = 'resident_' . date('Y-m-d i:h:s');
         $data = Excel::download(new CustomerExport(), $name . '.xlsx');
 
         return $data;

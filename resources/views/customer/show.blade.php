@@ -466,11 +466,11 @@
                                         <td class="Id">
                                             @if (\Auth::guard('customer')->check())
                                                 <a href="{{ route('customer.invoice.show', \Crypt::encrypt($invoice->id)) }}"
-                                                    class="btn btn-outline-primary">{{ @$invoice->ref_number }}
+                                                    class="btn btn-outline-primary">{{ @$invoice->invoice_number }}
                                                 </a>
                                             @else
                                                 <a href="{{ route('invoice.show', \Crypt::encrypt($invoice->id)) }}"
-                                                    class="btn btn-outline-primary">{{ @$invoice->ref_number }}
+                                                    class="btn btn-outline-primary">{{ @$invoice->invoice_number }}
                                                 </a>
                                             @endif
                                         </td>

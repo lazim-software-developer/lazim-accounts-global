@@ -23,7 +23,8 @@ class Revenue extends Model
         'invoice_number',
         'transaction_date', // cheque draft date
         'transaction_method', // cheque transfer method
-        'transaction_number' // cheque transfer number
+        'transaction_number', // cheque transfer number
+        'is_attend',
     ];
 
     public function category()

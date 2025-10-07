@@ -17,11 +17,15 @@
         @endif --}}
         <div class="form-group col-md-6">
             {{ Form::label('name', __('Name'), ['class' => 'form-label']) }}
-            {{ Form::text('name', null, ['class' => 'form-control', 'required' => 'required']) }}
+            {{ Form::text('name', null, ['class' => 'form-control', 'required' => 'required','placeholder'=>__('Enter Name')]) }}
+        </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('initial_balance', __('Initial Balance'), ['class' => 'form-label']) }}
+            {{ Form::number('initial_balance', null, ['class' => 'form-control', 'required' => 'required','placeholder'=>__('Enter Initial Balance')]) }}
         </div>
         <div class="form-group col-md-6">
             {{ Form::label('code', __('Code'), ['class' => 'form-label']) }}
-            {{ Form::text('code', null, ['class' => 'form-control', 'required' => 'required']) }}
+            {{ Form::text('code', null, ['class' => 'form-control', 'required' => 'required','placeholder'=>__('Enter Code')]) }}
         </div>
 
 

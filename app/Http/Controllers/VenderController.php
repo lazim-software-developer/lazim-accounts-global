@@ -518,7 +518,7 @@ class VenderController extends Controller
                 $vender->shipping_phone = $request->shipping_phone;
                 $vender->shipping_zip = $request->shipping_zip;
                 $vender->shipping_address = $request->shipping_address;
-                $vender->lang = !empty($default_language) ? $default_language->value : '';
+                $vender->lang = !empty($default_language) ? $default_language->value : 'en';
                 $vender->is_enable_login = $enableLogin;
                 $vender->save();
                 BuildingVendor::create(['building_id' => \Auth::user()->currentBuilding(), 'vendor_id' => $vender->id]);

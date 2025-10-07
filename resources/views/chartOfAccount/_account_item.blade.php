@@ -1,5 +1,5 @@
 @foreach ($accounts as $account)
-    <ul class="child-nodes">
+    <ul class="child-nodes {{ request()->has('view') && request()->get('view') === 'all' ? 'active' : '' }}">
         @php
             $balance = 0;
             $totalDebit = 0;

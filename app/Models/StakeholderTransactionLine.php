@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class StakeholderTransactionLine extends Model
 {
@@ -58,32 +59,32 @@ class StakeholderTransactionLine extends Model
 
     public static function recalculateStakeholderBalances($userColumn, $userId, $fromDate)
     {
-        // $transactions = StakeholderTransactionLine::where($userColumn, $userId)
-        //     ->where('created_at', '>=', $fromDate)
-        //     ->orderBy('created_at')
-        //     ->get();
-        
-        $transactions = StakeholderTransactionLine::where($userColumn, $userId)
-            ->latest('created_at')
-            ->first();
+        DB::transaction(function () use ($userColumn, $userId, $fromDate) {
+            $transactions = StakeholderTransactionLine::where($userColumn, $userId)
+                ->where('created_at', '>=', $fromDate)
+                ->orderBy('created_at')
+                ->where('is_calculate', 0)
+                ->get();
 
-        foreach ($transactions as $transaction) {
-            $previousTransaction = $transaction->getPreviousTransaction();
-            $openingBalance = $previousTransaction ? $previousTransaction->closing_balance : $transaction->getStakeholder()->initial_balance;
+            foreach ($transactions as $transaction) {
+                $previousTransaction = $transaction->getPreviousTransaction();
+                $openingBalance = $previousTransaction ? $previousTransaction->closing_balance : $transaction->getStakeholder()->initial_balance;
 
-            // Recalculate closing balance
-            if (!empty((float) $transaction->credit)) {
-                $closingBalance = Utility::getClosingBalance($transaction->getStakeholder()::ACCOUNT_TYPE, 'credit', $transaction->credit, $openingBalance);
-            } else {
-                $closingBalance = Utility::getClosingBalance($transaction->getStakeholder()::ACCOUNT_TYPE, 'debit', $transaction->debit, $openingBalance);
+                // Recalculate closing balance
+                if (!empty((float) $transaction->credit)) {
+                    $closingBalance = Utility::getClosingBalance($transaction->getStakeholder()::ACCOUNT_TYPE, 'credit', $transaction->credit, $openingBalance);
+                } else {
+                    $closingBalance = Utility::getClosingBalance($transaction->getStakeholder()::ACCOUNT_TYPE, 'debit', $transaction->debit, $openingBalance);
+                }
+
+                // Update transaction balances
+                $transaction->update([
+                    'opening_balance' => $openingBalance,
+                    'closing_balance' => $closingBalance,
+                    'is_calculate' => 1
+                ]);
             }
-
-            // Update transaction balances
-            $transaction->update([
-                'opening_balance' => $openingBalance,
-                'closing_balance' => $closingBalance
-            ]);
-        }
+        });
     }
 
     public static function deleteAndRecalculateTransactionBalance($obj, $reference)
