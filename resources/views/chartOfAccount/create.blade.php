@@ -15,17 +15,21 @@
                 </a>
             </div>
         @endif --}}
-        <div class="form-group col-md-12">
+        <div class="form-group col-md-6">
             {{ Form::label('name', __('Name'), ['class' => 'form-label']) }}
-            {{ Form::text('name', '', ['class' => 'form-control', 'required' => 'required']) }}
+            {{ Form::text('name', '', ['class' => 'form-control', 'required' => 'required','placeholder'=>'Enter Name']) }}
+        </div>
+        <div class="form-group col-md-6">
+            {{ Form::label('initial_balance', __('Initial Balance'), ['class' => 'form-label']) }}
+            {{ Form::number('initial_balance', '', ['class' => 'form-control', 'required' => 'required','placeholder'=>'Enter Initial Balance']) }}
         </div>
         <div class="form-group col-md-6">
             {{ Form::label('code', __('Code'), ['class' => 'form-label']) }}
-            {{ Form::text('code', '', ['class' => 'form-control', 'required' => 'required']) }}
+            {{ Form::text('code', '', ['class' => 'form-control', 'required' => 'required','placeholder'=>'Enter Code']) }}
         </div>
         <div class="form-group col-md-6">
             {{ Form::label('sub_type', __('Account Type'), ['class' => 'form-label']) }}
-            {{ Form::select('sub_type', $account_type, null, ['class' => 'form-control select', 'required' => 'required']) }}
+            {{ Form::select('sub_type', $account_type, null, ['class' => 'form-control select', 'required' => 'required','placeholder'=>'Select Account Type']) }}
         </div>
 
         <div class="col-md-2">
@@ -53,7 +57,7 @@
 
         <div class="form-group col-md-12">
             {{ Form::label('description', __('Description'), ['class' => 'form-label']) }}
-            {!! Form::textarea('description', null, ['class' => 'form-control', 'rows' => '2']) !!}
+            {!! Form::textarea('description', null, ['class' => 'form-control', 'rows' => '2','placeholder'=>'Enter Description']) !!}
         </div>
 
     </div>

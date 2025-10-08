@@ -136,6 +136,7 @@ class ChartOfAccountController extends Controller
             $account->is_enabled  = isset($request->is_enabled) ? 1 : 0;
             $account->created_by  = Auth::user()->creatorId();
             $account->building_id  = Auth::user()->currentBuilding();
+            $account->initial_balance  = $request->initial_balance ?? null;
             $account->save();
 
             DB::commit();
@@ -185,6 +186,7 @@ class ChartOfAccountController extends Controller
             $chartOfAccount->description = $request->description;
             $chartOfAccount->is_enabled  = isset($request->is_enabled) ? 1 : 0;
             $chartOfAccount->building_id  = Auth::user()->currentBuilding();
+            $chartOfAccount->initial_balance  = $request->initial_balance ?? null;
             $chartOfAccount->save();
 
             return redirect()->route('chart-of-account.index')->with('success', __('Account successfully updated.'));

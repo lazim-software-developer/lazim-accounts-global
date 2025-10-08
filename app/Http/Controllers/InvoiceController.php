@@ -150,7 +150,10 @@ class InvoiceController extends Controller
         if (!Auth::user()->can('create invoice')) {
             return redirect()->back()->with('error', __('Permission denied.'));
         }
-
+        $vatAccountId=DB::table('settings')->where('name', 'vat_charge')->where('created_by', '=', Auth::user()->creatorId())->first()->value;
+        if(!$vatAccountId){
+            return redirect()->back()->with('error', __('VAT Account is not set.please set it first'));
+        }
         $validator = Validator::make(
             $request->all(),
             [
@@ -193,6 +196,7 @@ class InvoiceController extends Controller
 
             // Step 2: Try to mark invoice as sent
             $sentResponse = $this->sent($invoice->id, Auth::user());
+            
 
             $invoice->refresh();
 
@@ -969,8 +973,9 @@ class InvoiceController extends Controller
             ];
             Utility::addTransactionLines($data, $user?->id, $invoice?->building_id);
         }
-
-        $vatAccount = ChartOfAccount::where('name', 'VAT Payable 5%')->where('created_by', '=', Auth::user()->creatorId())->first(); // TODO TAX
+        $vatAccountId=DB::table('settings')->where('name', 'vat_charge')->where('created_by', '=', Auth::user()->creatorId())->first()->value;
+        if($vatAccountId){
+        $vatAccount = ChartOfAccount::where('id', $vatAccountId)->where('created_by', '=', Auth::user()->creatorId())->first(); // TODO TAX
         $invoiceTotalTax = $invoice->getTotalTax();
         $data = [
             'account_id' => $vatAccount->id,
@@ -982,7 +987,7 @@ class InvoiceController extends Controller
             'date' => $invoice->issue_date,
         ];
         Utility::addTransactionLines($data, $user?->id, $invoice?->building_id);
-
+        }
         $uArr = [
             'invoice_name' => $invoice->name,
             'invoice_number' => $invoice->invoice,

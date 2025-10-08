@@ -164,7 +164,7 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if (str_contains($revenue->transaction_method, 'Noqodi Payment'))
+                                            @if($revenue->is_attend == 1)
                                                 <i class="fas fa-check text-success"> {{ __('Attend') }}</i>
                                             @else
                                                 <i class="fas fa-times text-danger"> {{ __('Not Attend') }}</i>

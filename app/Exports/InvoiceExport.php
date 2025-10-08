@@ -18,9 +18,9 @@ class InvoiceExport implements FromCollection, WithHeadings
         // $data = Invoice::where('created_by' , \Auth::user()->id)->get();
 
         if (!\Auth::guard('customer')->check()) {
-            $data = Invoice::where('created_by', \Auth::user()->id)->get();
+            $data = Invoice::select('invoice_number', 'customer_id', 'issue_date', 'due_date', 'send_date', 'category_id', 'ref_number', 'status')->where('created_by', \Auth::user()->id)->get();
         } else {
-            $data = Invoice::where('customer_id', '=', \Auth::guard('customer')->check())->where('status', '!=', '0')->get();
+            $data = Invoice::select('invoice_number', 'customer_id', 'issue_date', 'due_date', 'send_date', 'category_id', 'ref_number', 'status')->where('customer_id', '=', \Auth::guard('customer')->check())->where('status', '!=', '0')->get();
         }
 
         if (!empty($data)) {
@@ -48,27 +48,21 @@ class InvoiceExport implements FromCollection, WithHeadings
                     $status = 'Paid';
                 }
                 unset($Invoice->discount_apply,$Invoice->shipping_display,$Invoice->id,$Invoice->created_by, $Invoice->updated_at, $Invoice->created_at);
-                if(!\Auth::guard('customer')->check())
-                {
-                    $data[$k]["invoice_id"] = \Auth::user()->invoiceNumberFormat($Invoice->invoice_id);
-                }
-                else{
-                    $data[$k]["invoice_id"] = Customer::invoiceNumberFormat($Invoice->invoice_id);
-                }
+                
                 $data[$k]["customer_id"]        = $customer;
                 $data[$k]["category_id"]   = $category;
                 $data[$k]["status"]   = $status;
 
             }
         }
-
+        // dd($data);
         return $data;
     }
 
     public function headings(): array
     {
         return [
-            "Invoice Id",
+            "Invoice Number",
             "Customer Name",
             "Issue Date",
             "Due Date",

@@ -17,6 +17,7 @@ class ChartOfAccount extends Model
         'created_by',
         'building_id',
         'is_sync',
+        'initial_balance',
     ];
 
     public function types()

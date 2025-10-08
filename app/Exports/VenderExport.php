@@ -16,14 +16,13 @@ class VenderExport implements FromCollection, WithHeadings
         $data = [];
 
         if (in_array(\Auth::user()->type, ['company', 'building'])) {
-            $data = Vender::where('created_by', \Auth::user()->creatorId())->get();
+            $data = Vender::select('vender_id','name','email','tax_number','contact','billing_name','billing_country','billing_state','billing_city','billing_phone','billing_zip','billing_address','shipping_name','shipping_country','shipping_state','shipping_city','shipping_phone','shipping_zip','shipping_address','balance')->where('created_by', \Auth::user()->creatorId())->get();
         } else {
-            $data = Vender::get();
+            $data = Vender::select('vender_id','name','email','tax_number','contact','billing_name','billing_country','billing_state','billing_city','billing_phone','billing_zip','billing_address','shipping_name','shipping_country','shipping_state','shipping_city','shipping_phone','shipping_zip','shipping_address','balance')->get();
         }
 
         if (!empty($data)) {
             foreach ($data as $k => $vendor) {
-                unset($vendor->id, $vendor->avatar, $vendor->password, $vendor->lang, $vendor->created_at, $vendor->updated_at, $vendor->created_by, $vendor->last_login_at, $vendor->is_enable_login, $vendor->is_active, $vendor->email_verified_at, $vendor->remember_token);
                 $data[$k]["vender_id"]        = \Auth::user()->venderNumberFormat($vendor->vender_id);
                 $data[$k]["balance"]          = \Auth::user()->priceFormat($vendor->balance);
             }

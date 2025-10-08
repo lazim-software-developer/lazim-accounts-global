@@ -152,7 +152,7 @@ class RevenueController extends Controller
                 $request->reference,
                 $request->description,
                 $request->add_receipt,
-                $customerDetailArray
+                $customerDetailArray,
             );
 
 
@@ -429,6 +429,7 @@ class RevenueController extends Controller
                 'customer_id' => $customerIds,
                 'reference' => $request->reference,
                 'description' => $request->description,
+                'is_attend' => 1,
             ]);
             // dd($customerDetailArray);
             RevenueCustomerDetail::where('revenue_id', $revenue->id)->delete();
@@ -497,8 +498,8 @@ class RevenueController extends Controller
                 ->value('owner_association_id');
 
             $oaReceiptData = [
-                'invoice_number'       => $revenue->invoice_number,
-                'transaction_method'   => $revenue->payment_method ?? 0,
+                // 'invoice_number'       => $revenue->invoice_number,
+                // 'transaction_method'   => $revenue->payment_method ?? 0,
                 'receipt_number'       => $revenue->receipt_number ?? ('REC-' . $revenue->id),
                 'receipt_date'         => $revenue->date,
                 'receipt_period'       => $revenue->receipt_period,
@@ -521,7 +522,7 @@ class RevenueController extends Controller
             // Update instead of insert
             DB::connection(env('SECOND_DB_CONNECTION'))
                 ->table('oam_receipts')
-                ->where('revenue_id', $revenue->id)
+                ->where('receipt_number', $revenue->receipt_number)
                 ->update($oaReceiptData);
             // dd($oaReceiptData);
 
@@ -779,6 +780,7 @@ class RevenueController extends Controller
             $revenue->reference = $reference;
             $revenue->description = $description;
             $revenue->building_id = \Auth::user()->currentBuilding();
+            $revenue->is_attend = 1;
 
             if ($addReceipt instanceof \Illuminate\Http\UploadedFile) {
                 $image_size = $addReceipt->getSize();

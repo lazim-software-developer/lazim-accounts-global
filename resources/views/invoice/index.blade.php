@@ -151,13 +151,13 @@
                                                 <a href="{{ route('customer.invoice.show', \Crypt::encrypt($invoice->id)) }}"
                                                     class="btn btn-outline-primary">
                                                     {{-- {{ AUth::user()->invoiceNumberFormat($invoice->invoice_id) }} --}}
-                                                    {{ !empty($invoice->ref_number) ? $invoice->ref_number : '' }}
+                                                    {{ !empty($invoice->invoice_number) ? $invoice->invoice_number : '' }}
                                                 </a>
                                             @else
                                                 <a href="{{ route('invoice.show', \Crypt::encrypt($invoice->id)) }}"
                                                     class="btn btn-outline-primary">
                                                     {{-- {{ AUth::user()->invoiceNumberFormat($invoice->invoice_id) }} --}}
-                                                    {{ !empty($invoice->ref_number) ? $invoice->ref_number : '' }}
+                                                    {{ !empty($invoice->invoice_number) ? $invoice->invoice_number : '' }}
                                                 </a>
                                             @endif
                                         </td>
