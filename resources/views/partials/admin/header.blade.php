@@ -38,7 +38,7 @@
                         role="button" aria-haspopup="false" aria-expanded="false">
                         <span class="theme-avtar">
                             @if (\Auth::guard('customer')->check())
-                                <img src="{{ (isset(\Auth::user()->profile) && !empty(\Auth::user()->profile) ? \Auth::user()->profile : 'logo-dark.png') }}"
+                                <img src="{{ isset(\Auth::user()->profile) && !empty(\Auth::user()->profile) ? \Auth::user()->profile : 'logo-dark.png' }}"
                                     class="img-fluid rounded-circle">
                             @else
                                 <img src="{{ !empty(\Auth::user()->profile) ? Auth::user()->profile : asset(Storage::url('uploads/avatar/avatar.png')) }}"
@@ -167,25 +167,29 @@
 
                 <li class="dropdown dash-h-item drp-language">
                     <a class="dash-head-link dropdown-toggle arrow-none me-0" data-bs-toggle="dropdown" href="#"
-                        role="button" aria-haspopup="false" aria-expanded="false">
+                        role="button" aria-haspopup="true" aria-expanded="false">
                         <i class="ti ti-building nocolor"></i>
-                        <span
-                            class="drp-text hide-mob">{{ $currentBuildingObj ? $currentBuildingObj->name : 'Buildings' }}</span>
+                        <span class="drp-text hide-mob">{{ $currentBuildingObj->name ?? 'Buildings' }}</span>
                         <i class="ti ti-chevron-down drp-arrow nocolor"></i>
                     </a>
 
-                    <div class="dropdown-menu dash-h-dropdown dropdown-menu-end">
-                        @if (isset($userBuilding) && !empty($userBuilding))
+                    <div class="dropdown-menu dash-h-dropdown dropdown-menu-end p-2" style="min-width: 250px;">
+                        <!-- Search Input -->
+                        <input type="text" id="buildingSearch" class="form-control form-control-sm mb-2"
+                            placeholder="Search building..." onkeyup="filterBuildings()">
+
+                        <!-- Building List -->
+                        <div id="buildingList" style="max-height: 250px; overflow-y: auto;">
                             @foreach ($buildings as $building)
-                                {{-- <a class="dropdown-item" onclick="selectBuilding({{ $building->id }})"> --}}
-                                {{-- <i class="ti ti-building"></i> {{ $building->name }} --}}
-                                {{-- </a> --}}
-                                <a class="dropdown-item"
-                                    href="{{ route('impersonate', isset($userBuilding[$building->id]) ? $userBuilding[$building->id] : $userBuilding[1]) }}">
+                                @php
+                                    $impersonateId = $userBuilding[$building->id] ?? reset($userBuilding);
+                                @endphp
+                                <a class="dropdown-item building-item"
+                                    href="{{ route('impersonate', $impersonateId) }}">
                                     <i class="ti ti-building"></i> {{ $building->name }}
                                 </a>
                             @endforeach
-                        @endif
+                        </div>
                     </div>
                 </li>
 
@@ -246,4 +250,19 @@
     </div>
 </header>
 
-<script></script>
+<script>
+    function filterBuildings() {
+        let input = document.getElementById('buildingSearch');
+        let filter = input.value.toLowerCase();
+        let items = document.getElementsByClassName('building-item');
+
+        for (let i = 0; i < items.length; i++) {
+            let text = items[i].textContent || items[i].innerText;
+            if (text.toLowerCase().indexOf(filter) > -1) {
+                items[i].style.display = "";
+            } else {
+                items[i].style.display = "none";
+            }
+        }
+    }
+</script>
