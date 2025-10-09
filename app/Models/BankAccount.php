@@ -22,11 +22,11 @@ class BankAccount extends Model
         return $this->hasOne('App\Models\ChartOfAccount', 'id', 'chart_account_id');
     }
 
-    public function getOpeningBalanceAttribute()
-    {
-        return TransactionLines::where('account_id', $this->chart_account_id)->orderBy('id', 'desc')->first()
-        ? TransactionLines::where('account_id', $this->chart_account_id)->orderBy('id', 'desc')->first()->closing_balance
-        : 0;
-    }
+    // public function getOpeningBalanceAttribute()
+    // {
+    //     return TransactionLines::where('account_id', $this->chart_account_id)->orderBy('id', 'desc')->first()
+    //     ? TransactionLines::where('account_id', $this->chart_account_id)->orderBy('id', 'desc')->first()->closing_balance
+    //     : 0;
+    // }
 }
 

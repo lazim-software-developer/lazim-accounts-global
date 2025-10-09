@@ -15,13 +15,29 @@
                 </a>
             </div>
         @endif --}}
-        <div class="form-group  col-md-6">
+        <div class="form-group col-md-6">
             {{ Form::label('from_account', __('From Account'), ['class' => 'form-label']) }}
-            {{ Form::select('from_account', $bankAccount, null, ['class' => 'form-control', 'required' => 'required']) }}
+            {{ Form::select('from_account', 
+                collect(['' => __('Select Bank')])->union($bankAccount), 
+                null, 
+                [
+                    'class' => 'form-control', 
+                    'required' => 'required',
+                    'id' => 'from_account',
+                ]
+            ) }}
         </div>
         <div class="form-group  col-md-6">
             {{ Form::label('to_account', __('To Account'), ['class' => 'form-label']) }}
-            {{ Form::select('to_account', $bankAccount, null, ['class' => 'form-control', 'required' => 'required']) }}
+            {{ Form::select('to_account', 
+                collect(['' => __('Select Bank')])->union($bankAccount), 
+                null, 
+                [
+                    'class' => 'form-control', 
+                    'required' => 'required',
+                    'id' => 'to_account',
+                ]
+            ) }}
         </div>
         <div class="form-group col-md-6">
             {{ Form::label('amount', __('Amount'), ['class' => 'form-label']) }}
@@ -52,3 +68,61 @@
     <input type="submit" value="{{ __('Create') }}" class="btn  btn-primary">
 </div>
 {{ Form::close() }}
+<script>
+(function() {
+    const fromAccountSelect = document.getElementById('from_account');
+    const toAccountSelect = document.getElementById('to_account');
+
+    // Function to disable selected option in the other dropdown
+    function updateAccountOptions() {
+        const fromValue = fromAccountSelect.value;
+        const toValue = toAccountSelect.value;
+
+        // Reset all options to enabled first
+        Array.from(toAccountSelect.options).forEach(option => {
+            option.disabled = false;
+        });
+        Array.from(fromAccountSelect.options).forEach(option => {
+            option.disabled = false;
+        });
+
+        // Disable the selected option in the opposite dropdown
+        if (fromValue) {
+            Array.from(toAccountSelect.options).forEach(option => {
+                if (option.value === fromValue) {
+                    option.disabled = true;
+                }
+            });
+        }
+
+        if (toValue) {
+            Array.from(fromAccountSelect.options).forEach(option => {
+                if (option.value === toValue) {
+                    option.disabled = true;
+                }
+            });
+        }
+    }
+
+    // Add event listeners
+    if (fromAccountSelect && toAccountSelect) {
+        fromAccountSelect.addEventListener('change', updateAccountOptions);
+        toAccountSelect.addEventListener('change', updateAccountOptions);
+
+        // Initial check on page load
+        updateAccountOptions();
+    }
+
+    // Form validation before submission
+    document.getElementById('transfer-form').addEventListener('submit', function(e) {
+        const fromValue = fromAccountSelect.value;
+        const toValue = toAccountSelect.value;
+
+        if (fromValue === toValue) {
+            e.preventDefault();
+            alert('From Account and To Account cannot be the same. Please select different accounts.');
+            return false;
+        }
+    });
+})();
+</script>

@@ -49,7 +49,7 @@
                                         <td>{{ $account->holder_name }}</td>
                                         <td>{{ $account->bank_name }}</td>
                                         <td>{{ $account->account_number }}</td>
-                                        <td>{{ \Auth::user()->priceFormat($account->opening_balance ?? '-') }}</td>
+                                        <td>{{ $account->opening_balance ?? '-' }}</td>
                                         <td>{{ $account->contact_number ?? '-' }}</td>
                                         <td>{{ $account->bank_address ?? '-' }}</td>
                                         @if (Gate::check('edit bank account') || Gate::check('delete bank account'))

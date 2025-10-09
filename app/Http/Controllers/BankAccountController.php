@@ -21,7 +21,6 @@ class BankAccountController extends Controller
     {
         if (\Auth::user()->can('create bank account')) {
             $accounts = BankAccount::with('chartAccount')->where('created_by', '=', \Auth::user()->creatorId())->get();
-
             return view('bankAccount.index', compact('accounts'));
         } else {
             return redirect()->back()->with('error', __('Permission denied.'));
@@ -66,6 +65,12 @@ class BankAccountController extends Controller
                 return redirect()->route('bank-account.index')->with('error', $messages->first());
             }
 
+            $bankExists = BankAccount::where('chart_account_id', $request->chart_account_id)->exists();
+            $chartAccounts = ChartOfAccount::find($request->chart_account_id);
+            if ($bankExists) {
+                return redirect()->route('bank-account.index')->with('error', __('Bank account already exists in '.$chartAccounts->name.'.'));
+            }
+
             $account                  = new BankAccount();
             $account->chart_account_id = $request->chart_account_id;
             $account->holder_name     = $request->holder_name;
@@ -75,8 +80,12 @@ class BankAccountController extends Controller
             $account->contact_number  = $request->contact_number ? $request->contact_number : '-';
             $account->bank_address    = $request->bank_address ? $request->bank_address : '-';
             $account->created_by      = \Auth::user()->creatorId();
+            $account->building_id     = \Auth::user()->currentBuilding();
             $account->save();
             CustomField::saveData($account, $request->customField);
+
+            $chartAccounts->initial_balance = $account->opening_balance;
+            $chartAccounts->save();
 
             // $accountId = BankAccount::where('chart_account_id', $account->chart_account_id)->first();
             $data = [
@@ -115,8 +124,9 @@ class BankAccountController extends Controller
 
                 $bankAccount->customField = CustomField::getData($bankAccount, 'account');
                 $customFields             = CustomField::where('created_by', '=', \Auth::user()->creatorId())->where('module', '=', 'account')->get();
-
-                return view('bankAccount.edit', compact('bankAccount', 'customFields', 'chartAccounts', 'subAccounts'));
+                $openingBalance = $bankAccount->opening_balance;
+                $transactionLinesCount = TransactionLines::where('account_id', $bankAccount->chart_account_id)->where('reference_id', $bankAccount->id)->where('reference','Bank Account')->count();
+                return view('bankAccount.edit', compact('bankAccount', 'customFields', 'chartAccounts', 'subAccounts','openingBalance','transactionLinesCount'));
             } else {
                 return response()->json(['error' => __('Permission denied.')], 401);
             }
@@ -133,7 +143,7 @@ class BankAccountController extends Controller
             $validator = \Validator::make(
                 $request->all(),
                 [
-                    'chart_account_id' => 'required|exists:chart_of_accounts,id',
+                    // 'chart_account_id' => 'required|exists:chart_of_accounts,id',
                     'holder_name' => 'required',
                     'bank_name' => 'required',
                     'account_number' => 'required',
@@ -146,7 +156,7 @@ class BankAccountController extends Controller
                 return redirect()->route('bank-account.index')->with('error', $messages->first());
             }
 
-            $bankAccount->chart_account_id = $request->chart_account_id;
+            // $bankAccount->chart_account_id = $request->chart_account_id;
             $bankAccount->holder_name     = $request->holder_name;
             $bankAccount->bank_name       = $request->bank_name;
             $bankAccount->account_number  = $request->account_number;
@@ -157,17 +167,24 @@ class BankAccountController extends Controller
             $bankAccount->save();
             CustomField::saveData($bankAccount, $request->customField);
 
-            $data = [
-                'account_id' => $bankAccount->chart_account_id,
-                'transaction_type' => 'Credit',
-                'transaction_amount' => $bankAccount->opening_balance,
-                'reference' => 'Bank Account',
-                'reference_id' => $bankAccount->id,
-                'reference_sub_id' => 0,
-                'date' => date('Y-m-d'),
-            ];
+            $chartAccounts = ChartOfAccount::find($bankAccount->chart_account_id);
+            $chartAccounts->initial_balance = $bankAccount->opening_balance;
+            $chartAccounts->save();
 
-            Utility::addTransactionLines($data);
+            $transactionLinesCount = TransactionLines::where('account_id', $bankAccount->chart_account_id)->where('reference_id', $bankAccount->id)->where('reference','Bank Account')->count();
+            if($transactionLinesCount==1){
+                $data = [
+                    'account_id' => $bankAccount->chart_account_id,
+                    'transaction_type' => 'Credit',
+                    'transaction_amount' => $bankAccount->opening_balance,
+                    'reference' => 'Bank Account',
+                    'reference_id' => $bankAccount->id,
+                    'reference_sub_id' => 0,
+                    'date' => date('Y-m-d'),
+                ];
+    
+                Utility::addTransactionLines($data);
+            }            
 
             return redirect()->route('bank-account.index')->with('success', __('Account successfully updated.'));
         } else {
