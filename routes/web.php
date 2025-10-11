@@ -1225,6 +1225,7 @@ Route::any('retainer-payhere-status/{id}/{amt?}', [PayHereController::class, 're
 Route::get('/get-adjusted-amount', [RevenueController::class, 'getAdjustedAmount']);
 Route::get('/invoice-status', [RevenueController::class, 'getInvoiceStatus']);
 Route::get('/get-invoices-by-customer/{customer}', [RevenueController::class, 'getInvoicesByCustomer']);
+Route::get('/get-invoice-details/{invoiceId}', [InvoiceController::class, 'getInvoiceDetails'])->name('invoice.details');
 Route::get('revenue/{id}/show', [RevenueController::class, 'show'])->name('revenue.show')->middleware(['auth', 'XSS', 'revalidate']);
 
 //revenue

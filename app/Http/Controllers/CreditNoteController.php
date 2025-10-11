@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ChartOfAccount;
-use App\Models\CreditNote;
+use App\Models\Tax;
 use App\Models\Invoice;
+use App\Models\Utility;
+use App\Models\Customer;
+use App\Models\CreditNote;
+use Illuminate\Http\Request;
+use App\Models\ChartOfAccount;
 use App\Models\InvoiceProduct;
 use App\Models\ProductService;
-use App\Models\Tax;
-use App\Models\Utility;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class CreditNoteController extends Controller
 {
@@ -33,7 +36,7 @@ class CreditNoteController extends Controller
     {
         if (\Auth::user()->can('create credit note')) {
             $invoiceDue = Invoice::where('id', $invoice_id)->first();
-
+            dd($invoiceDue);
             return view('creditNote.create', compact('invoiceDue', 'invoice_id'));
         } else {
             return redirect()->back()->with('error', __('Permission denied.'));
@@ -91,7 +94,22 @@ class CreditNoteController extends Controller
 
             $creditNote = CreditNote::find($creditNote_id);
             $creditNote['vat_amount'] = $creditNote->amount * ($creditNote->vat_percentage / 100);
-            return view('creditNote.edit', compact('creditNote'));
+            $customers = Customer::where('building_id', \Auth::user()->currentBuilding())->get()->pluck('name', 'id');
+            $invoices = Invoice::where('id', $creditNote->invoice)
+            ->select('id', 'invoice_id')
+            ->get()
+            ->mapWithKeys(function ($invoice) {
+                $total = $invoice->getDue(); // Calculate the total using the method
+                return [
+                    $invoice->id => Auth::user()->invoiceNumberFormat($invoice->invoice_id) . ' - ' . $total,
+                ];
+            });
+            $invoice = Invoice::with('customer')
+                ->where('id', $invoice_id)
+                ->where('building_id', Auth::user()->currentBuilding())
+                ->firstOrFail();
+            $dueAmount = $invoice->getDue();
+            return view('creditNote.edit', compact('creditNote', 'customers', 'invoices', 'dueAmount'));
         } else {
             return redirect()->back()->with('error', __('Permission denied.'));
         }
@@ -127,6 +145,7 @@ class CreditNoteController extends Controller
             $credit->amount      = $request->amount;
             $credit->vat_percentage  = (int) Tax::where('name', 'VAT')->where('building_id', \Auth::user()->currentBuilding())->first()?->rate ?? 5;
             $credit->description = $request->description;
+            $credit->total_amount   = $request->amount + $request->vat_amount;
             $credit->save();
             $credit->updateCustomerBalance();
 
@@ -159,8 +178,8 @@ class CreditNoteController extends Controller
         if (\Auth::user()->can('create credit note')) {
 
             $invoices = Invoice::where('created_by', \Auth::user()->creatorId())->get()->pluck('invoice_id', 'id');
-
-            return view('creditNote.custom_create', compact('invoices'));
+            $customers = Customer::where('building_id', \Auth::user()->currentBuilding())->get()->pluck('name', 'id');
+            return view('creditNote.custom_create', compact('invoices', 'customers'));
         } else {
             return redirect()->back()->with('error', __('Permission denied.'));
         }
@@ -181,6 +200,11 @@ class CreditNoteController extends Controller
                 $messages = $validator->getMessageBag();
 
                 return redirect()->back()->with('error', $messages->first());
+            }
+            $creatorId = \Auth::user()->creatorId();
+            $VATCharge = DB::table('settings')->where('name', 'vat_charge')->where('created_by', $creatorId)->first();
+            if ($VATCharge === null) {
+                return redirect()->back()->with('error', __('No VAT charge ledger found for this building.Please add VAT charge ledger first in system settings.'));
             }
             $invoice_id = $request->invoice;
             $invoiceDue = Invoice::where('id', $invoice_id)->first();
@@ -209,19 +233,20 @@ class CreditNoteController extends Controller
 
             $credit->updateCustomerBalance();
 
-            $vatAccount = ChartOfAccount::where('name', 'VAT 5%')->where('created_by', '=', \Auth::user()->creatorId())->first();
+            $vatAccount = ChartOfAccount::where('id', $VATCharge->value)->where('created_by', '=', \Auth::user()->creatorId())->first();
             $creditNoteTotalTax = ($credit->vat_percentage / 100) * $request->amount;
-
-            $data = [
-                'account_id' => $vatAccount->id,
-                'transaction_type' => 'Debit',
-                'transaction_amount' => $creditNoteTotalTax,
-                'reference' => CreditNote::TYPE_CREDIT_NOTE,
-                'reference_id' => $credit->id,
-                'reference_sub_id' => $vat->id,
-                'date' => $credit->date,
-            ];
-            Utility::addTransactionLines($data, \Auth::user()->creatorId(), $credit?->building_id);
+            if ($vatAccount) {
+                $data = [
+                    'account_id' => $vatAccount->id,
+                    'transaction_type' => 'Debit',
+                    'transaction_amount' => $creditNoteTotalTax,
+                    'reference' => CreditNote::TYPE_CREDIT_NOTE,
+                    'reference_id' => $credit->id,
+                    'reference_sub_id' => $vat->id,
+                    'date' => $credit->date,
+                ];
+                Utility::addTransactionLines($data, \Auth::user()->creatorId(), $credit?->building_id);
+            }
 
             $invoice_products = InvoiceProduct::where('invoice_id', $invoice->id)->first();
             $product = ProductService::find($invoice_products->product_id);

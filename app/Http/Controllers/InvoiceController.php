@@ -1866,4 +1866,37 @@ class InvoiceController extends Controller
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
+    public function getInvoiceDetails($invoiceId)
+    {
+        try {
+            $invoice = Invoice::with('customer')
+                ->where('id', $invoiceId)
+                ->where('building_id', Auth::user()->currentBuilding())
+                ->firstOrFail();
+
+            $totalAmount = $invoice->getTotal();
+            $dueAmount = $invoice->getDue();
+
+            // Get status text
+            $statusMap = [
+                0 => 'Draft',
+                1 => 'Sent',
+                2 => 'Unpaid',
+                3 => 'Partially Paid',
+                4 => 'Paid',
+            ];
+            return response()->json([
+                'invoice_number' => Auth::user()->invoiceNumberFormat($invoice->invoice_id),
+                'invoice_date' => $invoice->issue_date,
+                'due_date' => $invoice->due_date,
+                'total_amount' => number_format($totalAmount, 2),
+                'due_amount' => number_format($dueAmount, 2, '.', ''),
+                'status' => $statusMap[$invoice->status] ?? 'Unknown',
+                'customer_name' => $invoice->customer->name ?? 'N/A',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching invoice details: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch invoice details'], 500);
+        }
+    }
 }
