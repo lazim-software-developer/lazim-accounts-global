@@ -18,6 +18,7 @@ class DebitNote extends Model
         'building_id',
         'created_by',
         'total_amount',
+        'description',
     ];
 
     public function vendor()

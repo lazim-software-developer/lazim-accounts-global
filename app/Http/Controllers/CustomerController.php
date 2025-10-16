@@ -185,6 +185,81 @@ class CustomerController extends Controller
             $customer->save();
             CustomField::saveData($customer, $request->customField);
 
+            $types = ChartOfAccountType::where('building_id', \Auth::user()->currentBuilding())->where('name', 'Assets')->first();
+                if (! $types) {
+                    $types = ChartOfAccountType::updateOrCreate([
+                        'name' => 'Assets',
+                        'building_id' => \Auth::user()->currentBuilding(),
+                        'created_by' => \Auth::user()->creatorId(),
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+
+            $accountTypes = ChartOfAccountSubType::where('type', $types->id)->where('building_id', \Auth::user()->currentBuilding())->first();
+            if (! $accountTypes) {
+                $accountTypes = ChartOfAccountSubType::updateOrCreate([
+                    'name' => 'Current Asset',
+                    'type' => $types->id,
+                    'building_id' => \Auth::user()->currentBuilding(),
+                    'created_by' => \Auth::user()->creatorId(),
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
+            $AccountDetail = ChartOfAccount::where('building_id', \Auth::user()->currentBuilding())->where('code', 1206)->first();
+                if (! $AccountDetail) {
+                    $AccountDetail = ChartOfAccount::updateOrCreate([
+                        'name' => 'Sundry Debtors',
+                        'code' => 1206,
+                        'type' => $types->id,
+                        'sub_type' => $accountTypes->id,
+                        'parent' => 0,
+                        'description' => 'Sundry Debtors',
+                        'is_enabled' => 1,
+                        'building_id' => \Auth::user()->currentBuilding(),
+                        'created_by' => \Auth::user()->creatorId(),
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s'),
+                        'initial_balance' => 0,
+                    ]);
+                }
+                $parentAccount = ChartOfAccountParent::where('account', $AccountDetail->id)->first();
+                if (! $parentAccount) {
+                    $parentAccount = ChartOfAccountParent::updateOrCreate([
+                        'name' => $AccountDetail->name,
+                        'sub_type' => $accountTypes->id,
+                        'type' => $types->id,
+                        'account' => $AccountDetail->id,
+                        'created_by' => \Auth::user()->creatorId(),
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+                $parentAccountChildCount = ChartOfAccount::where('parent', $parentAccount->id)
+                            ->where('building_id', $customer->building_id)
+                            ->count();
+                        $accountCode = intval($AccountDetail->code . ($parentAccountChildCount + 1));
+                        $chartOfAccount = ChartOfAccount::updateOrCreate(
+                            [
+                                'building_id' => $customer->building_id,
+                                'code' => $accountCode,
+                                'name' => $customer->name,
+                            ],
+                            [
+                                'type' => $types->id,
+                                'sub_type' => $accountTypes->id,
+                                'parent' => $parentAccount->id,
+                                'description' => 'Sundry Debtors',
+                                'is_enabled' => 1,
+                                'building_id' => $customer->building_id,
+                                'created_by' => \Auth::user()->creatorId(),
+                                'created_at' => date('Y-m-d H:i:s'),
+                                'updated_at' => date('Y-m-d H:i:s'),
+                                'initial_balance' => 0,
+                            ]
+                        );
+
             // } else {
             //     return redirect()->back()->with('error', __('Your user limit is over, Please upgrade plan.'));
             // }
@@ -283,6 +358,18 @@ class CustomerController extends Controller
                 $messages = $validator->getMessageBag();
 
                 return redirect()->route('customer.index')->with('error', $messages->first());
+            }
+
+            $AccountDetail = ChartOfAccount::where('building_id', \Auth::user()->currentBuilding())->where('code', 1206)->first();
+            $parentAccount = ChartOfAccountParent::where('account', $AccountDetail->id)->first();
+            $parentAccountChildCount = ChartOfAccount::where('parent', $parentAccount->id)
+                            ->where('building_id', $customer->building_id)
+                            ->count();
+            $accountCode = intval($AccountDetail->code . ($parentAccountChildCount));
+            $chartOfAccount = ChartOfAccount::where('building_id', \Auth::user()->currentBuilding())->where('created_by', \Auth::user()->creatorId())->where('code', $accountCode)->where('name', $customer->name)->first();
+            if ($chartOfAccount) {
+                $chartOfAccount->name = $request->name;
+                $chartOfAccount->save();
             }
 
             $customer->name             = $request->name;

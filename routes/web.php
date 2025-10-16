@@ -1238,6 +1238,8 @@ Route::resource('billPayment', BillPaymentController::class)->only(['store', 'ed
 
 Route::get('/get-bills-by-vendor/{vendor}', [BillPaymentController::class, 'getBillsByVendor'])->name('get.bills.by.vendor');
 Route::get('/get-bill-due-amount/{bill}', [BillPaymentController::class, 'getBillDueAmount'])->name('get.bill.due.amount');
+Route::get('/bills-by-vendor/{vendor}', [BillPaymentController::class, 'billsByVendor'])->name('bills.by.vendor');
+Route::get('/get-bill-details/{bill}', [BillPaymentController::class, 'getBillDetails'])->name('get.bill.details');
 
 Route::get('bill-payment/index', [BillPaymentController::class, 'index'])->name('BillPayment.index')->middleware(['auth', 'XSS', 'revalidate']);
 Route::get('bill-payment/create', [BillPaymentController::class, 'create'])->name('BillPayment.create');

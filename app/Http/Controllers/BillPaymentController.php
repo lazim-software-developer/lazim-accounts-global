@@ -7,9 +7,11 @@ use App\Models\Vender;
 use App\Models\Utility;
 use App\Models\BankAccount;
 use App\Models\BillPayment;
+use App\Models\BillProduct;
 use App\Models\TransferType;
 use Illuminate\Http\Request;
 use App\Models\ChartOfAccount;
+use App\Models\ProductService;
 use App\Models\TransactionLines;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -148,6 +150,41 @@ class BillPaymentController extends Controller
             })->values();
             
         return response()->json($bills);
+    }
+    public function billsByVendor($vendor_id) 
+    {
+        $bills = Bill::where('vender_id', $vendor_id)
+            ->where('created_by', \Auth::user()->creatorId())
+            ->where('status', '!=', 0)  // Not fully paid
+            // Get bills that still have remaining amount to be paid
+            ->get()
+            ->filter(function($bill) {
+                return $bill->getDue() > 0;
+            })
+            ->mapWithKeys(function($bill) {
+                return [
+                    $bill->id => \Auth::user()->billNumberFormat($bill->bill_id),
+                ];
+            });
+            
+        return response()->json($bills);
+    }
+    public function getBillDetails($bill_id) 
+    {
+        $bill = Bill::find($bill_id);
+        $billProduct = BillProduct::where('bill_id', $bill_id)->first();
+        $product = ProductService::find($billProduct->product_id);
+        return response()->json([
+            'bill_id' => $bill->id,
+            'bill_number' => \Auth::user()->billNumberFormat($bill->bill_id),
+            'bill_date' => $bill->bill_date,
+            'due_date' => $bill->due_date,
+            'total_amount' => $bill->total_amount,
+            'due_amount' => $bill->getDue(),
+            'status' => $bill->status,
+            'product_id' => $billProduct->product_id,
+            'product_name' => $product->name,
+            ]);
     }
 
     public function getBillDueAmount($bill_id)

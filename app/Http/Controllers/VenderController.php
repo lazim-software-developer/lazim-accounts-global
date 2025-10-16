@@ -523,6 +523,81 @@ class VenderController extends Controller
                 $vender->save();
                 BuildingVendor::create(['building_id' => \Auth::user()->currentBuilding(), 'vendor_id' => $vender->id]);
                 CustomField::saveData($vender, $request->customField);
+
+                $types = ChartOfAccountType::where('building_id', \Auth::user()->currentBuilding())->where('name', 'Liabilities')->first();
+                if (!$types) {
+                    $types = ChartOfAccountType::updateOrCreate([
+                        'name' => 'Liabilities',
+                        'building_id' => \Auth::user()->currentBuilding(),
+                        'created_by' => \Auth::user()->creatorId(),
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+
+                $accountTypes = ChartOfAccountSubType::where('type', $types->id)->where('name', 'Current Liabilities')->where('building_id', Auth::user()->currentBuilding())->first();
+                if (!$accountTypes) {
+                    $accountTypes = ChartOfAccountSubType::updateOrCreate([
+                        'name' => 'Current Liabilities',
+                        'type' => $types->id,
+                        'building_id' => \Auth::user()->currentBuilding(),
+                        'created_by' => \Auth::user()->creatorId(),
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+
+                $AccountDetail = ChartOfAccount::where('building_id', \Auth::user()->currentBuilding())->where('code', 2140)->first();
+                if (!$AccountDetail) {
+                    $AccountDetail = ChartOfAccount::updateOrCreate([
+                        'name' => 'Sundry Creditors',
+                        'code' => 2140,
+                        'type' => $types->id,
+                        'sub_type' => $accountTypes->id,
+                        'parent' => 0,
+                        'description' => 'Sundry Creditors',
+                        'building_id' => \Auth::user()->currentBuilding(),
+                        'created_by' => \Auth::user()->creatorId(),
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+
+                if ($AccountDetail && $types && $accountTypes) {
+                    $parentAccount = ChartOfAccountParent::where('account', $AccountDetail->id)->first();
+                    if (!$parentAccount) {
+                        $parentAccount = ChartOfAccountParent::updateOrCreate([
+                            'name' => $AccountDetail->name,
+                            'sub_type' => $accountTypes->id,
+                            'type' => $types->id,
+                            'account' => $AccountDetail->id,
+                            'created_by' => \Auth::user()->creatorId(),
+                            'created_at' => date('Y-m-d H:i:s'),
+                            'updated_at' => date('Y-m-d H:i:s'),
+                        ]);
+                    }
+                    if ($parentAccount) {
+                        $chartOfAccount = ChartOfAccount::updateOrCreate(
+                            [
+                                'building_id' => \Auth::user()->currentBuilding(),
+                                'code' => $AccountDetail->code,
+                                'name' => $vender->name,
+                            ],
+                            [
+                                'type' => $types->id,
+                                'sub_type' => $accountTypes->id,
+                                'parent' => $parentAccount->id ?? 0,
+                                'description' => 'Chart Of Account for Vender ID: ' . $vender->id,
+                                'is_enabled' => 1,
+                                'is_sync' => 1,
+                                'created_by' => \Auth::user()->creatorId(),
+                                'created_at' => date('Y-m-d H:i:s'),
+                                'updated_at' => date('Y-m-d H:i:s'),
+                                'initial_balance' => 0,
+                            ]
+                        );
+                    }
+                }
             } else {
                 return redirect()->back()->with('error', __('Your user limit is over, Please upgrade plan.'));
             }
@@ -608,6 +683,12 @@ class VenderController extends Controller
                 $messages = $validator->getMessageBag();
 
                 return redirect()->route('vender.index')->with('error', $messages->first());
+            }
+
+            $chartOfAccount = ChartOfAccount::where('building_id', \Auth::user()->currentBuilding())->where('created_by', \Auth::user()->creatorId())->where('code', '2140')->where('name', $vender->name)->first();
+            if ($chartOfAccount) {
+                $chartOfAccount->name = $request->name;
+                $chartOfAccount->save();
             }
 
             $vender->name = $request->name;

@@ -2398,7 +2398,7 @@ class Utility extends Model
             ->orderBy('id', 'desc')
             ->first();
 
-        $transactionLines->opening_balance = $previousTransaction ? $previousTransaction->closing_balance : $chartOfAccount->initial_balance;
+        $transactionLines->opening_balance = $previousTransaction ? $previousTransaction->closing_balance : $chartOfAccount->initial_balance ?? 0;
         $transactionLines->closing_balance = self::getClosingBalance($chartOfAccount->types->name, $data['transaction_type'], $data['transaction_amount'], $transactionLines->opening_balance);
 
         if ($data['transaction_type'] == "Credit") {
